@@ -97,6 +97,21 @@ select#goto {
 #hud dt { color: var(--muted); }
 #hud dd { margin: 0; }
 
+#wallpanel {
+  top: calc(env(safe-area-inset-top, 0px) + 126px); left: max(16px, env(safe-area-inset-left, 0px));
+  padding: 12px 14px; display: grid; gap: 10px; width: min(330px, calc(100% - 32px));
+}
+#wallpanel .lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+#wallpanel strong { font-family: var(--font-display); font-size: 17px; line-height: 1.2; display: block; }
+#wallpanel .meta { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+#wallpanel .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#wallpanel .sep { border-top: 1px solid var(--line); padding-top: 10px; }
+#wallpanel .tool { border-color: var(--line); padding: 8px 11px; }
+#wallpanel .tool:disabled { opacity: 0.45; cursor: default; }
+.tool.danger { background: var(--measure); color: #fff; border-color: transparent; }
+.tool.danger:hover { background: var(--measure); filter: brightness(1.08); }
+#wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
+@media (max-width: 640px) { #wallpanel { top: calc(env(safe-area-inset-top, 0px) + 168px); } }
 #help {
   left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding: 9px 13px; font-size: 12.5px; color: var(--muted); max-width: min(420px, calc(100% - 32px)); line-height: 1.45;
@@ -119,6 +134,34 @@ select#goto {
   background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
 .tag.m { background: var(--measure); color: #fff; border-color: transparent; font-variant-numeric: tabular-nums; font-size: 13px; }
 
+.right { display: flex; gap: 8px; align-items: center; }
+#btn-gal { font: 600 13px/1 var(--font-body); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 13px 15px; cursor: pointer; box-shadow: var(--shadow); }
+#btn-gal:hover { background: var(--accent-soft); }
+#gal { inset: 0; z-index: 30; background: var(--panel-solid); overflow-y: auto; overscroll-behavior: contain;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+#gal header { display: flex; justify-content: space-between; align-items: center; gap: 12px; max-width: 1200px; margin: 0 auto 16px; }
+#gal h2 { margin: 0; font-family: var(--font-display); font-size: 22px; text-wrap: balance; }
+#gal header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.closebtn { font: 600 13px/1 var(--font-body); color: var(--fg); background: transparent; border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 14px; cursor: pointer; }
+.closebtn:hover { background: var(--accent-soft); }
+#gal section { max-width: 1200px; margin: 0 auto 22px; }
+#gal h3 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.shot { display: grid; gap: 6px; padding: 0; border: 0; background: none; color: var(--fg); text-align: left; cursor: zoom-in; font: 500 13px var(--font-body); min-width: 0; }
+.shot img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--line); display: block; }
+.shot:hover img { border-color: var(--accent); }
+#lb { inset: 0; z-index: 40; background: rgba(8, 11, 15, 0.94); display: grid; grid-template-rows: 1fr auto; touch-action: pan-y;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+#lb img { width: 100%; height: 100%; object-fit: contain; min-height: 0; }
+#lb .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)); color: #eef2f5; }
+#lb .bar span { font: 600 15px var(--font-body); min-width: 0; }
+#lb .bar div { display: flex; gap: 6px; }
+#lb button { font: 600 13px/1 var(--font-body); color: #eef2f5; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 7px; padding: 10px 14px; cursor: pointer; }
+#lb button:hover { background: rgba(255, 255, 255, 0.2); }
 #loading { inset: 0; display: grid; place-items: center; z-index: 20; background: var(--sky); }
 #loading .box { padding: 18px 22px; display: grid; gap: 10px; min-width: 240px; }
 #loading .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
@@ -142,9 +185,12 @@ select#goto {
     <h1>Visite de la maison</h1>
     <p>Relevé du plan + photos · état actuel avant travaux</p>
   </div>
-  <div class="seg panel" role="group" aria-label="Mode">
-    <button id="m-maquette" aria-pressed="true">Maquette</button>
-    <button id="m-visite" aria-pressed="false">Visite</button>
+  <div class="right">
+    <button id="btn-gal" aria-haspopup="dialog">Rendus</button>
+    <div class="seg panel" role="group" aria-label="Mode">
+      <button id="m-maquette" aria-pressed="true">Maquette</button>
+      <button id="m-visite" aria-pressed="false">Visite</button>
+    </div>
   </div>
 </header>
 
@@ -163,9 +209,26 @@ select#goto {
   <div class="chips panel">
     <button id="measure" class="tool" aria-pressed="false">Mesurer</button>
     <button id="clear" class="tool" hidden>Effacer</button>
+    <button id="wallmode" class="tool" aria-pressed="false">Casser un mur</button>
   </div>
 </div>
 
+<aside id="wallpanel" class="ui panel" hidden aria-live="polite">
+  <div id="wp-sel">
+    <span class="lvl" id="wp-lvl">Aucune cloison sélectionnée</span>
+    <strong id="wp-name">Cliquez une cloison intérieure</strong>
+    <span class="meta" id="wp-meta">Les murs extérieurs ne se cassent pas.</span>
+  </div>
+  <div class="row">
+    <button id="wp-break" class="tool danger" disabled>Abattre ce mur</button>
+    <button id="wp-desel" class="tool" disabled>Désélectionner</button>
+  </div>
+  <div class="row sep">
+    <span id="wp-count">Plan d’origine</span>
+    <button id="wp-undo" class="tool" disabled>Annuler</button>
+    <button id="wp-reset" class="tool" disabled>Revenir au plan d’origine</button>
+  </div>
+</aside>
 <aside id="hud" class="ui panel" hidden aria-live="polite">
   <span class="lvl" id="hud-lvl">Extérieur</span>
   <span class="room" id="hud-room">Jardin</span>
@@ -175,6 +238,17 @@ select#goto {
 <p id="help" class="ui panel"></p>
 <div id="joy" class="ui" hidden><div class="knob"></div></div>
 
+<div id="gal" class="ui" role="dialog" aria-modal="true" aria-labelledby="gal-title" hidden>
+  <header>
+    <div><h2 id="gal-title">Rendus de la maison</h2><p>Images calculées dans Blender, état actuel avant travaux</p></div>
+    <button class="closebtn" id="gal-close">Fermer</button>
+  </header>
+  <div id="gal-body"></div>
+</div>
+<div id="lb" class="ui" role="dialog" aria-modal="true" aria-label="Rendu en grand" hidden>
+  <img id="lb-img" alt="">
+  <div class="bar"><span id="lb-cap"></span><div><button id="lb-prev" aria-label="Rendu précédent">←</button><button id="lb-next" aria-label="Rendu suivant">→</button><button id="lb-close">Fermer</button></div></div>
+</div>
 <div id="loading" class="ui">
   <div class="box panel">
     <strong>Chargement de la maison</strong>
@@ -232,7 +306,7 @@ const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping;   // meme courbe que les rendus Blender
 renderer.toneMappingExposure = 1.0;
 
 const scene = new THREE.Scene();
@@ -241,7 +315,10 @@ scene.fog = new THREE.Fog(0xcfdbe6, 40, 90);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 
-scene.add(new THREE.HemisphereLight(0xf2f5fa, 0x8c7b66, 1.1));
+const hemi = new THREE.HemisphereLight(0xf2f5fa, 0x8c7b66, 1.1);
+scene.add(hemi);
+const envTex = scene.environment;
+let baked = false;
 const sun = new THREE.DirectionalLight(0xfff2e0, 1.6);
 sun.position.copy(b2t(W + 12, D + 18, 22));
 scene.add(sun);
@@ -303,7 +380,8 @@ fetchModel().then((buf) => loader.parse(buf, '', onModel, onModelError)).catch(o
 function onModel(gltf) {
   gltf.scene.traverse((o) => {
     if (!o.isMesh) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    o.material = o.material.clone();            // une copie par niveau : chaque niveau a sa propre lightmap
+    const mats = [o.material];
     for (const m of mats) {
       if (m.name.startsWith('Verre')) { m.transparent = true; m.opacity = 0.18; m.depthWrite = false; m.roughness = 0; m.metalness = 0; m.transmission = 0; }
       if (m.map) { m.map.anisotropy = 8; }
@@ -319,15 +397,27 @@ function onModel(gltf) {
   // un seul maillage de collision (positions monde) avec BVH, pour marcher vite et sans trou
   gltf.scene.updateMatrixWorld(true);
   const geos = [];
-  gltf.scene.traverse((o) => {
-    if (!o.isMesh) return;
+  const flatGeo = (o) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', o.geometry.getAttribute('position'));
     if (o.geometry.index) g.setIndex(o.geometry.index);
     const flat = g.index ? g.toNonIndexed() : g.clone();
     flat.applyMatrix4(o.matrixWorld);
-    geos.push(flat);
-  });
+    return flat;
+  };
+  for (const [k, node] of Object.entries(groups)) {
+    const list = [];
+    node.traverse((o) => { if (o.isMesh) list.push(flatGeo(o)); });
+    if (k.startsWith('Mur_')) {
+      const g = mergeGeometries(list, false); g.computeBoundsTree();
+      const col = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+      col.updateMatrixWorld(true);
+      const base = k.split('_').slice(2).join('_');
+      const box = new THREE.Box3().setFromObject(node);
+      const len = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
+      walls[k] = { key: k, node, col, base, level: k.split('_')[1], name: WALL_NAMES[base] || base, len, removed: false };
+    } else geos.push(...list);
+  }
   // garde-fous invisibles autour de la tremie des combles (non amenages, pas de garde-corps dans le modele)
   const zc = LVZ[2];
   for (const [x0, x1, y0, y1] of [[4.50, 4.56, 1.30, 3.90], [5.41, 5.47, 1.30, 3.90], [4.50, 5.47, 3.84, 3.90]]) {
@@ -341,9 +431,33 @@ function onModel(gltf) {
   collider = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
   collider.updateMatrixWorld(true);
   document.getElementById('loading').hidden = true;
+  applyLightmaps().catch((e) => console.warn('Eclairage precalcule indisponible, eclairage simple utilise', e));
+  restoreWalls();
   applyCut('all');
   setHelp();
   loop();
+}
+
+// ---------------------------------------------------------------- eclairage precalcule dans Blender (lightmaps)
+const LM_SCALE = Math.PI / 0.28;   // energie divisee par 0,28 a la cuisson pour tenir en 8 bits
+async function applyLightmaps() {
+  const tl = new THREE.TextureLoader();
+  const entries = Object.entries(groups).filter(([k]) => k !== 'Vitrages');
+  const texs = await Promise.all(entries.map(([k]) => tl.loadAsync(`lightmaps/lm_${k}.jpg`)));
+  entries.forEach(([, g], i) => {
+    const t = texs[i];
+    t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.channel = 1; t.anisotropy = 4; t.needsUpdate = true;
+    g.traverse((o) => {
+      if (!o.isMesh) return;
+      const m = o.material;
+      m.lightMap = t; m.lightMapIntensity = LM_SCALE;
+      if (m.metalness > 0.5) { m.envMap = envTex; m.envMapIntensity = 1.0; }
+      m.needsUpdate = true;
+    });
+  });
+  scene.environment = null;
+  hemi.intensity = 0; sun.intensity = 0; headLamp.intensity = 0;
+  baked = true;
 }
 
 // ---------------------------------------------------------------- maquette : coupe par niveau
@@ -351,13 +465,16 @@ let cut = 'all';
 const CUTS = {
   all: [],
   2: ['Toiture'],
-  1: ['Toiture', 'Combles', 'Plafonds_Etage'],
-  0: ['Toiture', 'Combles', 'Plafonds_Etage', 'Etage1', 'Plafonds_RDC'],
+  1: ['Toiture', 'Combles', 'Plafonds_Etage', 'Vitrages'],
+  0: ['Toiture', 'Combles', 'Plafonds_Etage', 'Etage1', 'Plafonds_RDC', 'Vitrages'],
 };
 function applyCut(c) {
   cut = c;
   const hide = mode === 'visite' ? [] : CUTS[c];
-  for (const [k, g] of Object.entries(groups)) g.visible = !hide.includes(k);
+  for (const [k, g] of Object.entries(groups)) {
+    const w = walls[k];
+    g.visible = w ? !w.removed && !hide.includes(w.level) : !hide.includes(k);
+  }
   if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
   for (const b of document.querySelectorAll('[data-cut]')) b.setAttribute('aria-pressed', String(b.dataset.cut === String(c)));
   if (mode === 'maquette') {
@@ -403,7 +520,9 @@ const DOWN = new THREE.Vector3(0, -1, 0);
 
 function castFirst(origin, dir, far) {
   ray.set(origin, dir); ray.far = far;
-  const hits = collider ? ray.intersectObject(collider, false) : [];
+  const targets = collider ? [collider] : [];
+  for (const w of Object.values(walls)) if (!w.removed) targets.push(w.col);
+  const hits = ray.intersectObjects(targets, false);
   return hits.length ? hits[0] : null;
 }
 function floorAt(p, above = 0.45, far = 4) {
@@ -430,7 +549,7 @@ function setMode(m) {
   orbit.enabled = m === 'maquette';
   camera.fov = m === 'visite' ? 72 : 45;
   camera.updateProjectionMatrix();
-  headLamp.intensity = m === 'visite' ? 2.2 : 0;
+  headLamp.intensity = m === 'visite' && !baked ? 2.2 : 0;
   scene.fog.near = m === 'visite' ? 25 : 40;
   if (m === 'visite' && !walker.started) { const o = OUTSIDE[0]; teleport(o.spawn[0], o.spawn[1], o.z, o.look); walker.started = true; }
   if (m === 'maquette') { camera.position.copy(b2t(W + 9, D + 13, 12)); }
@@ -464,7 +583,7 @@ sel.addEventListener('change', () => {
 
 // clavier (codes physiques : marche aussi en AZERTY avec ZQSD)
 addEventListener('keydown', (e) => {
-  if (e.target === sel) return;
+  if (e.target === sel || !gal.hidden || !lb.hidden) return;
   keys.add(e.code);
   if (mode === 'visite' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
@@ -489,6 +608,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!drag || drag.id !== e.pointerId) return;
   const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
   if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
+  if (moved < 6 && wallMode) pickWall(e.clientX, e.clientY);
   drag = null;
 });
 canvas.addEventListener('pointercancel', () => { drag = null; });
@@ -576,6 +696,96 @@ function updateHud() {
   hudDl.innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
 }
 
+// ---------------------------------------------------------------- outil "casser un mur"
+const walls = {};
+const WALL_NAMES = {
+  Cl_sejour_entree: 'Séjour / entrée', Cl_local_couloir: 'Local 1 / couloir et salle d’eau', Cl_sejour_local: 'Séjour / local 1',
+  Cl_entree_sam: 'Entrée / salle à manger', Cl_sde_cuisine: 'Salle d’eau et WC / cuisine', Cl_sam_cuisine: 'Salle à manger / cuisine',
+  Cl_sde: 'Salle d’eau / couloir', Cl_wc_gauche: 'WC / couloir', Cl_wc_haut: 'Muret du WC sous l’escalier',
+  Cl_ch2_deg: 'Chambre 2 / dégagement', Cl_ch1_deg: 'Chambre 1 / dégagement', Cl_ch2_ch1: 'Chambre 2 / chambre 1',
+  Cl_deg_ch3: 'Dégagement / chambre 3', Cl_deg_ch4: 'Dégagement / chambre 4', Cl_ch3_ch4: 'Chambre 3 / chambre 4',
+  Cl_dressing: 'Dressing / dégagement',
+};
+const LEVEL_LABEL = { RDC: 'Rez-de-chaussée', Etage1: '1er étage' };
+const STORE = 'maison-murs-abattus';
+let wallMode = false, selWall = null;
+const removedOrder = [];
+const wp = {
+  panel: document.getElementById('wallpanel'), lvl: document.getElementById('wp-lvl'), name: document.getElementById('wp-name'),
+  meta: document.getElementById('wp-meta'), brk: document.getElementById('wp-break'), desel: document.getElementById('wp-desel'),
+  count: document.getElementById('wp-count'), undo: document.getElementById('wp-undo'), reset: document.getElementById('wp-reset'),
+};
+const btnWall = document.getElementById('wallmode');
+function setGlow(w, on) {
+  w.node.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material.emissive?.setHex(on ? 0xd2452f : 0x000000);
+    o.material.emissiveIntensity = on ? 0.45 : 1;
+  });
+}
+function select(w) {
+  if (selWall) setGlow(selWall, false);
+  selWall = w;
+  if (w) setGlow(w, true);
+  renderPanel();
+}
+function renderPanel() {
+  if (selWall) {
+    wp.lvl.textContent = `Cloison · ${LEVEL_LABEL[selWall.level]}`;
+    wp.name.textContent = selWall.name;
+    wp.meta.textContent = `${selWall.len.toFixed(2).replace('.', ',')} m de long, environ 7 cm d’épaisseur`;
+  } else {
+    wp.lvl.textContent = 'Aucune cloison sélectionnée';
+    wp.name.textContent = 'Cliquez une cloison intérieure';
+    wp.meta.textContent = 'Les murs extérieurs ne se cassent pas.';
+  }
+  wp.brk.disabled = !selWall; wp.desel.disabled = !selWall;
+  const n = removedOrder.length;
+  wp.count.textContent = n ? `${n} mur${n > 1 ? 's' : ''} abattu${n > 1 ? 's' : ''}` : 'Plan d’origine';
+  wp.undo.disabled = !n; wp.reset.disabled = !n;
+}
+function save() { try { localStorage.setItem(STORE, JSON.stringify(removedOrder)); } catch (e) { /* stockage indisponible */ } }
+function setRemoved(w, rem) {
+  w.removed = rem;
+  const i = removedOrder.indexOf(w.key);
+  if (rem && i < 0) removedOrder.push(w.key);
+  if (!rem && i >= 0) removedOrder.splice(i, 1);
+  applyCut(mode === 'maquette' ? cut : 'all');
+}
+function restoreWalls() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(STORE) || '[]'); } catch (e) { saved = []; }
+  for (const k of saved) if (walls[k]) setRemoved(walls[k], true);
+  renderPanel();
+}
+function pickWall(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera); ray.far = 200;
+  const hits = ray.intersectObjects(solids.filter((g) => g.visible), true);
+  if (!hits.length) return;
+  let o = hits[0].object;
+  while (o && !walls[o.name?.replace(/\.\d+$/, '')]) o = o.parent;
+  const w = o ? walls[o.name.replace(/\.\d+$/, '')] : null;
+  if (w) { select(w); return; }
+  select(null);
+  wp.name.textContent = 'Ce n’est pas une cloison intérieure';
+  wp.meta.textContent = 'Visez une cloison entre deux pièces.';
+}
+function toggleWallMode(on) {
+  wallMode = on;
+  btnWall.setAttribute('aria-pressed', String(on));
+  wp.panel.hidden = !on;
+  if (!on) select(null);
+  if (on && measuring) btnMeasure.click();
+  renderPanel(); setHelp();
+}
+btnWall.addEventListener('click', () => toggleWallMode(!wallMode));
+wp.brk.addEventListener('click', () => { if (!selWall) return; const w = selWall; select(null); setRemoved(w, true); save(); renderPanel(); });
+wp.desel.addEventListener('click', () => select(null));
+wp.undo.addEventListener('click', () => { const k = removedOrder[removedOrder.length - 1]; if (k) { setRemoved(walls[k], false); save(); renderPanel(); } });
+wp.reset.addEventListener('click', () => { for (const k of [...removedOrder]) setRemoved(walls[k], false); save(); renderPanel(); });
+
 // ---------------------------------------------------------------- outil de mesure
 let measuring = false;
 const mPts = [], mObjs = [], mTags = [];
@@ -586,6 +796,7 @@ btnMeasure.addEventListener('click', () => {
   measuring = !measuring;
   btnMeasure.setAttribute('aria-pressed', String(measuring));
   btnMeasure.textContent = measuring ? 'Mesure active' : 'Mesurer';
+  if (measuring && wallMode) toggleWallMode(false);
   setHelp();
 });
 btnClear.addEventListener('click', () => {
@@ -621,6 +832,7 @@ function addMeasurePoint(cx, cy) {
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
+  if (wallMode) { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
   if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
   else h.innerHTML = isTouch ? 'Joystick pour marcher, glissez ailleurs pour regarder.'
@@ -643,7 +855,55 @@ function loop() {
   for (const t of mTags) placeTag(t.el, t.p);
   renderer.render(scene, camera);
 }
-window.__maison = { setMode, teleport, keys, walker, applyCut, camera,
+// ---------------------------------------------------------------- galerie des rendus
+const SHOTS = [
+  ['Extérieur', [['photo_avant', 'Façade côté rue'], ['photo_arriere', 'Façade arrière']]],
+  ['Vues d’ensemble', [['rdc', 'Rez-de-chaussée vu d’en haut'], ['etage1', '1er étage vu d’en haut'], ['combles', 'Combles, zone à plus de 1,80 m']]],
+  ['Rez-de-chaussée', [['entree', 'Entrée et escalier'], ['sejour', 'Séjour'], ['salle_a_manger', 'Salle à manger'], ['cuisine', 'Cuisine'],
+    ['local1', 'Local 1'], ['salle_d_eau', 'Salle d’eau'], ['wc', 'WC sous l’escalier']]],
+  ['1er étage', [['escalier_haut', 'Escalier vu du palier'], ['chambre1', 'Chambre 1'], ['chambre3', 'Chambre 3'], ['chambre4', 'Chambre 4']]],
+  ['Combles', [['combles_interieur', 'Combles, intérieur']]],
+];
+const flat = SHOTS.flatMap(([, l]) => l);
+const gal = document.getElementById('gal'), galBody = document.getElementById('gal-body');
+const lb = document.getElementById('lb'), lbImg = document.getElementById('lb-img'), lbCap = document.getElementById('lb-cap');
+let lbIdx = 0, galBuilt = false;
+function buildGal() {
+  if (galBuilt) return; galBuilt = true;
+  for (const [title, list] of SHOTS) {
+    const sec = document.createElement('section');
+    sec.innerHTML = `<h3>${title}</h3><div class="grid"></div>`;
+    const grid = sec.querySelector('.grid');
+    for (const [id, cap] of list) {
+      const b = document.createElement('button');
+      b.className = 'shot';
+      b.innerHTML = `<img loading="lazy" src="rendus/t_${id}.jpg" alt="${cap}"><span>${cap}</span>`;
+      b.addEventListener('click', () => openLb(flat.findIndex((f) => f[0] === id)));
+      grid.appendChild(b);
+    }
+    galBody.appendChild(sec);
+  }
+}
+function openLb(i) {
+  lbIdx = (i + flat.length) % flat.length;
+  lbImg.src = `rendus/${flat[lbIdx][0]}.jpg`; lbImg.alt = flat[lbIdx][1];
+  lbCap.textContent = `${flat[lbIdx][1]}  ·  ${lbIdx + 1}/${flat.length}`;
+  lb.hidden = false;
+}
+document.getElementById('btn-gal').addEventListener('click', () => { buildGal(); gal.hidden = false; document.getElementById('gal-close').focus(); });
+document.getElementById('gal-close').addEventListener('click', () => { gal.hidden = true; canvas.focus(); });
+document.getElementById('lb-close').addEventListener('click', () => { lb.hidden = true; });
+document.getElementById('lb-prev').addEventListener('click', () => openLb(lbIdx - 1));
+document.getElementById('lb-next').addEventListener('click', () => openLb(lbIdx + 1));
+let swipeX = null;
+lb.addEventListener('pointerdown', (e) => { swipeX = e.clientX; });
+lb.addEventListener('pointerup', (e) => { if (swipeX !== null && Math.abs(e.clientX - swipeX) > 50) openLb(lbIdx + (e.clientX < swipeX ? 1 : -1)); swipeX = null; });
+addEventListener('keydown', (e) => {
+  if (!lb.hidden) { if (e.key === 'Escape') lb.hidden = true; if (e.key === 'ArrowRight') openLb(lbIdx + 1); if (e.key === 'ArrowLeft') openLb(lbIdx - 1); e.stopPropagation(); return; }
+  if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
+}, true);
+
+window.__maison = { setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
