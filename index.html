@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Visite de la maison</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Archivo:wght@400;500;600&display=swap">
+<style>
+/* Plein ecran 3D, barre d'outils en haut, fiche de la piece en bas : un plan d'archi qu'on traverse */
+:root {
+  --sky: #cfdbe6;
+  --panel: rgba(248, 249, 247, 0.93);
+  --panel-solid: #f8f9f7;
+  --fg: #1c2228;
+  --muted: #5a6670;
+  --line: #d3d8d6;
+  --accent: #2b5a8a;          /* bleu de tirage de plan */
+  --accent-soft: #dfe8f1;
+  --accent-fg: #ffffff;
+  --measure: #c0392b;
+  --font-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 10px;
+  --shadow: 0 6px 24px rgba(20, 30, 40, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --panel: rgba(23, 28, 34, 0.9); --panel-solid: #171c22; --fg: #e6ebef; --muted: #9ba7b1;
+    --line: #36414b; --accent: #86b4e2; --accent-soft: #23364a; --accent-fg: #0c1825;
+    --measure: #ff7a6b; --shadow: 0 6px 24px rgba(0, 0, 0, 0.4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --panel: rgba(23, 28, 34, 0.9); --panel-solid: #171c22; --fg: #e6ebef; --muted: #9ba7b1;
+  --line: #36414b; --accent: #86b4e2; --accent-soft: #23364a; --accent-fg: #0c1825;
+  --measure: #ff7a6b; --shadow: 0 6px 24px rgba(0, 0, 0, 0.4); color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--sky); color: var(--fg); font-family: var(--font-body); font-size: 14px;
+  overflow: hidden; overscroll-behavior: none;
+}
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+.ui { position: fixed; z-index: 5; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+/* barre du haut */
+#top {
+  top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px); padding-bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+#top > * { pointer-events: auto; }
+.brand { padding: 8px 14px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.brand p { margin: 0; color: var(--muted); font-size: 12px; }
+.seg { display: flex; padding: 4px; gap: 4px; }
+.seg button, .chip, .tool {
+  font: 500 13px/1 var(--font-body); color: var(--fg); background: transparent; border: 1px solid transparent;
+  border-radius: 7px; padding: 9px 13px; cursor: pointer; white-space: nowrap;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.seg button:not([aria-pressed="true"]):hover, .chip:not([aria-pressed="true"]):hover, .tool:hover { background: var(--accent-soft); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* barre secondaire : niveaux / pieces / outils */
+#sub {
+  top: calc(env(safe-area-inset-top, 0px) + 70px); left: max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: calc(100% - 32px);
+}
+.chips { display: flex; gap: 4px; padding: 4px; align-items: center; flex-wrap: wrap; }
+.chips .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0 6px 0 8px; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--fg); }
+select#goto {
+  font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line);
+  border-radius: 7px; padding: 8px 10px; max-width: 62vw;
+}
+.tool[aria-pressed="true"] { background: var(--measure); color: #fff; }
+
+/* fiche de la piece */
+#hud {
+  right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding: 12px 16px; min-width: 190px; max-width: min(320px, calc(100% - 32px));
+  display: grid; gap: 4px;
+}
+#hud .lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+#hud .room { font-family: var(--font-display); font-size: 20px; font-weight: 700; line-height: 1.15; }
+#hud dl { margin: 4px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; font-variant-numeric: tabular-nums; }
+#hud dt { color: var(--muted); }
+#hud dd { margin: 0; }
+
+#help {
+  left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding: 9px 13px; font-size: 12.5px; color: var(--muted); max-width: min(420px, calc(100% - 32px)); line-height: 1.45;
+}
+#help kbd { font: 600 11px var(--font-body); color: var(--fg); background: var(--accent-soft); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; }
+
+/* joystick tactile */
+#joy {
+  left: max(24px, calc(env(safe-area-inset-left, 0px) + 24px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  width: 120px; height: 120px; border-radius: 50%; touch-action: none;
+  background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+#joy .knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%;
+  background: var(--accent); opacity: 0.85; }
+
+/* etiquettes 3D (pieces, mesures) */
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.tag { position: absolute; transform: translate(-50%, -50%); font: 600 12px var(--font-body); color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+.tag.m { background: var(--measure); color: #fff; border-color: transparent; font-variant-numeric: tabular-nums; font-size: 13px; }
+
+#loading { inset: 0; display: grid; place-items: center; z-index: 20; background: var(--sky); }
+#loading .box { padding: 18px 22px; display: grid; gap: 10px; min-width: 240px; }
+#loading .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+#loading .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+@media (max-width: 640px) {
+  .brand p { display: none; }
+  #sub { top: calc(env(safe-area-inset-top, 0px) + 64px); }
+  #help { display: none; }
+  #hud { left: auto; min-width: 0; padding: 10px 12px; }
+  #hud .room { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<canvas id="c" tabindex="0" aria-label="Vue 3D de la maison"></canvas>
+<div id="labels"></div>
+
+<header id="top" class="ui">
+  <div class="brand panel">
+    <h1>Visite de la maison</h1>
+    <p>Relevé du plan + photos · état actuel avant travaux</p>
+  </div>
+  <div class="seg panel" role="group" aria-label="Mode">
+    <button id="m-maquette" aria-pressed="true">Maquette</button>
+    <button id="m-visite" aria-pressed="false">Visite</button>
+  </div>
+</header>
+
+<div id="sub" class="ui">
+  <div id="levels" class="chips panel" role="group" aria-label="Couper au niveau">
+    <span class="lbl">Afficher</span>
+    <button class="chip" data-cut="all" aria-pressed="true">Tout</button>
+    <button class="chip" data-cut="2" aria-pressed="false">Combles</button>
+    <button class="chip" data-cut="1" aria-pressed="false">1er</button>
+    <button class="chip" data-cut="0" aria-pressed="false">RDC</button>
+  </div>
+  <div id="gotobox" class="chips panel" hidden>
+    <span class="lbl">Aller à</span>
+    <select id="goto" aria-label="Aller à une pièce"></select>
+  </div>
+  <div class="chips panel">
+    <button id="measure" class="tool" aria-pressed="false">Mesurer</button>
+    <button id="clear" class="tool" hidden>Effacer</button>
+  </div>
+</div>
+
+<aside id="hud" class="ui panel" hidden aria-live="polite">
+  <span class="lvl" id="hud-lvl">Extérieur</span>
+  <span class="room" id="hud-room">Jardin</span>
+  <dl id="hud-dl"></dl>
+</aside>
+
+<p id="help" class="ui panel"></p>
+<div id="joy" class="ui" hidden><div class="knob"></div></div>
+
+<div id="loading" class="ui">
+  <div class="box panel">
+    <strong>Chargement de la maison</strong>
+    <div class="bar"><i id="prog"></i></div>
+    <span id="load-msg" style="color:var(--muted);font-size:12px">Modèle 3D, environ 4 Mo</span>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.0/src/index.js"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { computeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+const origRaycast = THREE.Mesh.prototype.raycast;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+// ---------------------------------------------------------------- donnees (repere du plan, en metres)
+// x : gauche -> droite du plan, y : facade arriere (0) -> facade rue (6,80), z : hauteur
+const W = 9.08, D = 6.80, LVZ = [0, 2.95, 5.80];
+const LVNAME = ['Rez-de-chaussée', '1er étage', 'Combles'];
+const ROOMS = [
+  { name: 'Entrée', lvl: 0, r: [3.57, 5.41, 1.49, 6.80], hsp: '2,57 m', dims: '1,85 m de large', spawn: [4.0, 6.3], look: [0, -1] },
+  { name: 'Séjour', lvl: 0, r: [0, 3.50, 2.96, 6.80], hsp: '2,54 m', dims: '3,56 × 3,82 m', spawn: [3.0, 4.3], look: [-1, 0.4] },
+  { name: 'Salle à manger', lvl: 0, r: [5.48, 9.08, 2.96, 6.80], hsp: '2,74 m', dims: '3,57 × 3,84 m', spawn: [6.0, 4.3], look: [1, 0.5] },
+  { name: 'Cuisine', lvl: 0, r: [5.48, 9.08, 0, 2.89], hsp: '2,74 m', dims: '3,64 × 2,95 m', spawn: [8.2, 2.5], look: [-0.6, -1] },
+  { name: 'Local 1', lvl: 0, r: [0, 3.50, 0, 2.89], hsp: '2,58 m', dims: '3,45 × 2,83 m', spawn: [3.0, 2.4], look: [-1, -0.6] },
+  { name: "Salle d'eau", lvl: 0, r: [3.57, 5.41, 0, 1.42], hsp: '2,58 m', dims: '1,83 m de large', spawn: [4.3, 1.15], look: [0.2, -1] },
+  { name: 'WC', lvl: 0, r: [4.56, 5.41, 1.49, 2.89], hsp: 'sous l’escalier' },
+  { name: 'Chambre 2', lvl: 1, r: [0, 3.50, 2.96, 6.80], hsp: '2,60 m', dims: '3,58 × 3,84 m', spawn: [3.1, 4.6], look: [-1, 0.5] },
+  { name: 'Chambre 1', lvl: 1, r: [0, 3.50, 0, 2.89], hsp: '2,65 m', dims: '3,58 × 2,88 m', spawn: [3.1, 2.2], look: [-1, -0.3] },
+  { name: 'Dégagement', lvl: 1, r: [3.57, 5.41, 0, 5.36], hsp: '2,65 m', spawn: [4.0, 0.6], look: [0, 1] },
+  { name: 'Dressing', lvl: 1, r: [3.57, 5.41, 5.43, 6.80], hsp: '2,65 m', dims: '1,29 m de large', spawn: [4.45, 5.75], look: [0, 1] },
+  { name: 'Chambre 3', lvl: 1, r: [5.48, 9.08, 2.96, 6.80], hsp: '2,60 m', dims: '3,57 × 3,86 m', spawn: [5.9, 4.6], look: [1, 0.3] },
+  { name: 'Chambre 4', lvl: 1, r: [5.48, 9.08, 0, 2.89], hsp: '2,65 m', dims: '3,57 × 2,95 m', spawn: [5.9, 0.6], look: [1, 0.7] },
+  { name: 'Combles', lvl: 2, r: [0.025, 9.055, -0.11, 6.91], hsp: '1,05 m en pied, 4,30 m au faîtage', dims: '9,03 × 7,02 m', spawn: [2.0, 1.5], look: [1, 0.6] },
+];
+const OUTSIDE = [
+  { name: 'Devant la maison', spawn: [5.2, D + 3.3], look: [-0.15, -1], z: 0 },
+  { name: 'Jardin, côté arrière', spawn: [4.5, -6.5], look: [0, 1], z: 0 },
+];
+const b2t = (x, y, z) => new THREE.Vector3(x, z, -y);        // repere plan -> three.js
+
+// ---------------------------------------------------------------- rendu
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xcfdbe6);
+scene.fog = new THREE.Fog(0xcfdbe6, 40, 90);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+scene.add(new THREE.HemisphereLight(0xf2f5fa, 0x8c7b66, 1.1));
+const sun = new THREE.DirectionalLight(0xfff2e0, 1.6);
+sun.position.copy(b2t(W + 12, D + 18, 22));
+scene.add(sun);
+const headLamp = new THREE.PointLight(0xfff1dc, 0, 7, 1.6);   // lampe qui suit le visiteur a l'interieur
+scene.add(headLamp);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 300);
+const orbit = new OrbitControls(camera, canvas);
+orbit.enableDamping = true;
+orbit.maxPolarAngle = Math.PI * 0.49;
+orbit.minDistance = 3; orbit.maxDistance = 45;
+orbit.target.copy(b2t(W / 2, D / 2, 2.5));
+camera.position.copy(b2t(W + 9, D + 13, 12));
+
+// ---------------------------------------------------------------- chargement du modele
+const groups = {};            // RDC, Etage1, Combles, Toiture, Exterieur, Plafonds_RDC, Plafonds_Etage
+let solids = [];
+let collider = null;
+const loader = new GLTFLoader();
+// Le modele est publie en glTF JSON (buffer en base64). On le relit nous-memes et on le remonte en GLB
+// en memoire : le cadre de la page refuse de charger des adresses data:, ce que ferait le loader.
+async function fetchModel() {
+  const res = await fetch('maison.json');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const total = +res.headers.get('content-length') || 3900000;
+  const reader = res.body.getReader();
+  const parts = []; let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value); got += value.length;
+    document.getElementById('prog').style.width = `${Math.min(100, Math.round((got / total) * 100))}%`;
+  }
+  const all = new Uint8Array(got); let o = 0;
+  for (const p of parts) { all.set(p, o); o += p.length; }
+  const json = JSON.parse(new TextDecoder().decode(all));
+  const b64 = json.buffers[0].uri.slice(json.buffers[0].uri.indexOf(',') + 1);
+  delete json.buffers[0].uri;
+  const raw = atob(b64);
+  const bin = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
+  let jb = new TextEncoder().encode(JSON.stringify(json));
+  const jPad = (4 - (jb.length % 4)) % 4, bPad = (4 - (bin.length % 4)) % 4;
+  const jLen = jb.length + jPad, bLen = bin.length + bPad;
+  const glb = new Uint8Array(12 + 8 + jLen + 8 + bLen);
+  const dv = new DataView(glb.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, glb.length, true);
+  dv.setUint32(12, jLen, true); dv.setUint32(16, 0x4E4F534A, true);
+  glb.set(jb, 20); glb.fill(0x20, 20 + jb.length, 20 + jLen);
+  dv.setUint32(20 + jLen, bLen, true); dv.setUint32(24 + jLen, 0x004E4942, true);
+  glb.set(bin, 28 + jLen);
+  return glb.buffer;
+}
+const onModelError = (err) => {
+  document.getElementById('load-msg').textContent = `Le modèle n’a pas pu se charger (${err?.message || err}). Rechargez la page.`;
+  console.error(err);
+};
+fetchModel().then((buf) => loader.parse(buf, '', onModel, onModelError)).catch(onModelError);
+function onModel(gltf) {
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (m.name.startsWith('Verre')) { m.transparent = true; m.opacity = 0.18; m.depthWrite = false; m.roughness = 0; m.metalness = 0; m.transmission = 0; }
+      if (m.map) { m.map.anisotropy = 8; }
+      m.envMapIntensity = 0.6;
+    }
+  });
+  for (const child of gltf.scene.children) {
+    const key = child.name.replace(/\.\d+$/, '');
+    groups[key] = child;
+  }
+  scene.add(gltf.scene);
+  solids = Object.values(groups);
+  // un seul maillage de collision (positions monde) avec BVH, pour marcher vite et sans trou
+  gltf.scene.updateMatrixWorld(true);
+  const geos = [];
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', o.geometry.getAttribute('position'));
+    if (o.geometry.index) g.setIndex(o.geometry.index);
+    const flat = g.index ? g.toNonIndexed() : g.clone();
+    flat.applyMatrix4(o.matrixWorld);
+    geos.push(flat);
+  });
+  // garde-fous invisibles autour de la tremie des combles (non amenages, pas de garde-corps dans le modele)
+  const zc = LVZ[2];
+  for (const [x0, x1, y0, y1] of [[4.50, 4.56, 1.30, 3.90], [5.41, 5.47, 1.30, 3.90], [4.50, 5.47, 3.84, 3.90]]) {
+    const bx = new THREE.BoxGeometry(x1 - x0, 1.0, y1 - y0).toNonIndexed();
+    bx.deleteAttribute('normal'); bx.deleteAttribute('uv');
+    bx.translate((x0 + x1) / 2, zc + 0.5, -(y0 + y1) / 2);
+    geos.push(bx);
+  }
+  const merged = mergeGeometries(geos, false);
+  merged.computeBoundsTree();
+  collider = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+  collider.updateMatrixWorld(true);
+  document.getElementById('loading').hidden = true;
+  applyCut('all');
+  setHelp();
+  loop();
+}
+
+// ---------------------------------------------------------------- maquette : coupe par niveau
+let cut = 'all';
+const CUTS = {
+  all: [],
+  2: ['Toiture'],
+  1: ['Toiture', 'Combles', 'Plafonds_Etage'],
+  0: ['Toiture', 'Combles', 'Plafonds_Etage', 'Etage1', 'Plafonds_RDC'],
+};
+function applyCut(c) {
+  cut = c;
+  const hide = mode === 'visite' ? [] : CUTS[c];
+  for (const [k, g] of Object.entries(groups)) g.visible = !hide.includes(k);
+  if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
+  for (const b of document.querySelectorAll('[data-cut]')) b.setAttribute('aria-pressed', String(b.dataset.cut === String(c)));
+  if (mode === 'maquette') {
+    const z = c === 'all' ? 2.5 : LVZ[+c] + 0.5;
+    orbit.target.copy(b2t(W / 2, D / 2, z));
+  }
+  buildRoomTags();
+}
+for (const b of document.querySelectorAll('[data-cut]')) b.addEventListener('click', () => applyCut(b.dataset.cut));
+
+// ---------------------------------------------------------------- etiquettes HTML
+const labelsEl = document.getElementById('labels');
+let roomTags = [];
+function buildRoomTags() {
+  for (const t of roomTags) t.el.remove();
+  roomTags = [];
+  if (mode !== 'maquette' || cut === 'all') return;
+  for (const r of ROOMS.filter((q) => q.lvl === +cut)) {
+    const el = document.createElement('div');
+    el.className = 'tag';
+    el.textContent = r.name;
+    labelsEl.appendChild(el);
+    roomTags.push({ el, p: b2t((r.r[0] + r.r[1]) / 2, (r.r[2] + r.r[3]) / 2, LVZ[r.lvl] + 0.1) });
+  }
+}
+const tmpV = new THREE.Vector3();
+function placeTag(el, p) {
+  tmpV.copy(p).project(camera);
+  const vis = tmpV.z < 1 && Math.abs(tmpV.x) < 1.1 && Math.abs(tmpV.y) < 1.1;
+  el.style.display = vis ? '' : 'none';
+  if (vis) el.style.transform = `translate(-50%,-50%) translate(${(tmpV.x * 0.5 + 0.5) * innerWidth}px, ${(-tmpV.y * 0.5 + 0.5) * innerHeight}px)`;
+}
+
+// ---------------------------------------------------------------- mode visite (marche a hauteur d'yeux)
+const EYE = 1.60, RADIUS = 0.25, STEP = 0.42;
+let mode = 'maquette';
+const walker = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, vy: 0 };
+const keys = new Set();
+const joy = { x: 0, y: 0 };
+const ray = new THREE.Raycaster();
+ray.firstHitOnly = true;
+const DOWN = new THREE.Vector3(0, -1, 0);
+
+function castFirst(origin, dir, far) {
+  ray.set(origin, dir); ray.far = far;
+  const hits = collider ? ray.intersectObject(collider, false) : [];
+  return hits.length ? hits[0] : null;
+}
+function floorAt(p, above = 0.45, far = 4) {
+  const h = castFirst(tmpO.set(p.x, p.y + above, p.z), DOWN, far);
+  return h ? h.point.y : null;
+}
+const tmpO = new THREE.Vector3();
+
+function teleport(bx, by, bz, look) {
+  const p = b2t(bx, by, bz + 1.4);
+  const f = floorAt(p, 0, 3);
+  walker.pos.set(p.x, f ?? bz, p.z);
+  walker.yaw = Math.atan2(-look[0], look[1]);
+  walker.pitch = 0;
+}
+function setMode(m) {
+  mode = m;
+  document.getElementById('m-maquette').setAttribute('aria-pressed', String(m === 'maquette'));
+  document.getElementById('m-visite').setAttribute('aria-pressed', String(m === 'visite'));
+  document.getElementById('levels').hidden = m !== 'maquette';
+  document.getElementById('gotobox').hidden = m !== 'visite';
+  document.getElementById('hud').hidden = m !== 'visite';
+  document.getElementById('joy').hidden = !(m === 'visite' && isTouch);
+  orbit.enabled = m === 'maquette';
+  camera.fov = m === 'visite' ? 72 : 45;
+  camera.updateProjectionMatrix();
+  headLamp.intensity = m === 'visite' ? 2.2 : 0;
+  scene.fog.near = m === 'visite' ? 25 : 40;
+  if (m === 'visite' && !walker.started) { const o = OUTSIDE[0]; teleport(o.spawn[0], o.spawn[1], o.z, o.look); walker.started = true; }
+  if (m === 'maquette') { camera.position.copy(b2t(W + 9, D + 13, 12)); }
+  applyCut(m === 'maquette' ? cut : 'all');
+  setHelp();
+  canvas.focus();
+}
+document.getElementById('m-maquette').addEventListener('click', () => setMode('maquette'));
+document.getElementById('m-visite').addEventListener('click', () => setMode('visite'));
+
+// liste des pieces
+const sel = document.getElementById('goto');
+{
+  const ph = new Option('Choisir une pièce…', ''); ph.disabled = true; ph.selected = true; sel.add(ph);
+  const og0 = document.createElement('optgroup'); og0.label = 'Extérieur';
+  OUTSIDE.forEach((o, i) => og0.appendChild(new Option(o.name, `o${i}`)));
+  sel.appendChild(og0);
+  LVNAME.forEach((ln, li) => {
+    const og = document.createElement('optgroup'); og.label = ln;
+    ROOMS.forEach((r, i) => { if (r.lvl === li && r.spawn) og.appendChild(new Option(r.name, `r${i}`)); });
+    sel.appendChild(og);
+  });
+}
+sel.addEventListener('change', () => {
+  const v = sel.value;
+  if (v.startsWith('o')) { const o = OUTSIDE[+v.slice(1)]; teleport(o.spawn[0], o.spawn[1], o.z, o.look); }
+  else { const r = ROOMS[+v.slice(1)]; teleport(r.spawn[0], r.spawn[1], LVZ[r.lvl], r.look); }
+  sel.selectedIndex = 0;
+  canvas.focus();
+});
+
+// clavier (codes physiques : marche aussi en AZERTY avec ZQSD)
+addEventListener('keydown', (e) => {
+  if (e.target === sel) return;
+  keys.add(e.code);
+  if (mode === 'visite' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+});
+addEventListener('keyup', (e) => keys.delete(e.code));
+addEventListener('blur', () => keys.clear());
+
+// regard a la souris / au doigt (glisser)
+const isTouch = matchMedia('(pointer: coarse)').matches;
+let drag = null;
+canvas.addEventListener('pointerdown', (e) => {
+  drag = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now() };
+  if (mode === 'visite') canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!drag || drag.id !== e.pointerId || mode !== 'visite') return;
+  const k = isTouch ? 0.006 : 0.0045;
+  walker.yaw -= (e.clientX - drag.x) * k;
+  walker.pitch = Math.max(-1.3, Math.min(1.3, walker.pitch - (e.clientY - drag.y) * k));
+  drag.x = e.clientX; drag.y = e.clientY;
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (!drag || drag.id !== e.pointerId) return;
+  const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
+  if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
+  drag = null;
+});
+canvas.addEventListener('pointercancel', () => { drag = null; });
+
+// joystick
+const joyEl = document.getElementById('joy'), knob = joyEl.querySelector('.knob');
+let joyId = null;
+function joyMove(e) {
+  const r = joyEl.getBoundingClientRect();
+  let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+  const max = r.width / 2 - 12, l = Math.hypot(dx, dy);
+  if (l > max) { dx *= max / l; dy *= max / l; }
+  knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  joy.x = dx / max; joy.y = dy / max;
+}
+joyEl.addEventListener('pointerdown', (e) => { joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); });
+joyEl.addEventListener('pointermove', (e) => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = (e) => { if (e.pointerId !== joyId) return; joyId = null; joy.x = joy.y = 0; knob.style.transform = ''; };
+joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+
+// deplacement avec collisions (murs, meubles) et suivi du sol (marches)
+const fwd = new THREE.Vector3(), right = new THREE.Vector3(), mv = new THREE.Vector3(), dirN = new THREE.Vector3();
+function blocked(p, dir, dist) {
+  for (const h of [0.55, 0.755, 0.93, 1.5]) {
+    const hit = castFirst(tmpO.set(p.x, p.y + h, p.z), dir, dist + RADIUS);
+    if (hit) return true;
+  }
+  return false;
+}
+function stepWalker(dt) {
+  let f = 0, s = 0;
+  if (keys.has('KeyW') || keys.has('ArrowUp')) f += 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) f -= 1;
+  if (keys.has('KeyD')) s += 1;
+  if (keys.has('KeyA')) s -= 1;
+  if (keys.has('ArrowLeft')) walker.yaw += 1.8 * dt;
+  if (keys.has('ArrowRight')) walker.yaw -= 1.8 * dt;
+  f -= joy.y; s += joy.x;
+  const run = keys.has('ShiftLeft') || keys.has('ShiftRight');
+  const speed = (run ? 2.8 : 1.4) * dt;
+  fwd.set(-Math.sin(walker.yaw), 0, -Math.cos(walker.yaw));
+  right.set(Math.cos(walker.yaw), 0, -Math.sin(walker.yaw));
+  mv.set(0, 0, 0).addScaledVector(fwd, f).addScaledVector(right, s);
+  const len = mv.length();
+  if (len > 1e-3) {
+    mv.multiplyScalar(Math.min(1, len) * speed / len);
+    const p = walker.pos;
+    const tryMove = (dx, dz) => {
+      const d = Math.hypot(dx, dz); if (d < 1e-5) return false;
+      dirN.set(dx / d, 0, dz / d);
+      if (blocked(p, dirN, d)) return false;
+      p.x += dx; p.z += dz; return true;
+    };
+    if (!tryMove(mv.x, mv.z)) { if (!tryMove(mv.x, 0)) tryMove(0, mv.z); }
+  }
+  // sol : marche de 42 cm max vers le haut, chute douce vers le bas
+  const fy = floorAt(walker.pos, STEP, 6);
+  if (fy !== null) {
+    if (fy > walker.pos.y) walker.pos.y += Math.min(fy - walker.pos.y, 3 * dt + 0.02);
+    else { walker.vy = Math.min(walker.vy + 9.8 * dt, 8); walker.pos.y = Math.max(fy, walker.pos.y - walker.vy * dt); if (walker.pos.y === fy) walker.vy = 0; }
+  }
+  camera.position.set(walker.pos.x, walker.pos.y + EYE, walker.pos.z);
+  camera.rotation.set(walker.pitch, walker.yaw, 0, 'YXZ');
+  headLamp.position.copy(camera.position);
+  updateHud();
+}
+
+// fiche de la piece courante
+const hudLvl = document.getElementById('hud-lvl'), hudRoom = document.getElementById('hud-room'), hudDl = document.getElementById('hud-dl');
+let lastRoom = '';
+function updateHud() {
+  const bx = walker.pos.x, by = -walker.pos.z, bz = walker.pos.y;
+  const lvl = bz < 2.5 ? 0 : bz < 5.5 ? 1 : 2;
+  const r = ROOMS.find((q) => q.lvl === lvl && bx >= q.r[0] && bx <= q.r[1] && by >= q.r[2] && by <= q.r[3]);
+  const inside = bx > -0.4 && bx < W + 0.4 && by > -0.4 && by < D + 0.4;
+  const key = r ? r.name : inside ? 'Escalier' : 'Extérieur';
+  if (key === lastRoom) return;
+  lastRoom = key;
+  hudLvl.textContent = r ? LVNAME[lvl] : inside ? LVNAME[lvl] : 'Extérieur';
+  hudRoom.textContent = r ? r.name : inside ? 'Escalier' : 'Terrain';
+  const rows = [];
+  if (r?.dims) rows.push(['Surface', r.dims]);
+  if (r?.hsp) rows.push(['Plafond', r.hsp]);
+  rows.push(['Vos yeux', '1,60 m du sol']);
+  hudDl.innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+}
+
+// ---------------------------------------------------------------- outil de mesure
+let measuring = false;
+const mPts = [], mObjs = [], mTags = [];
+const mMat = new THREE.MeshBasicMaterial({ color: 0xc0392b, depthTest: false });
+const lMat = new THREE.LineBasicMaterial({ color: 0xc0392b, depthTest: false });
+const btnMeasure = document.getElementById('measure'), btnClear = document.getElementById('clear');
+btnMeasure.addEventListener('click', () => {
+  measuring = !measuring;
+  btnMeasure.setAttribute('aria-pressed', String(measuring));
+  btnMeasure.textContent = measuring ? 'Mesure active' : 'Mesurer';
+  setHelp();
+});
+btnClear.addEventListener('click', () => {
+  for (const o of mObjs) scene.remove(o);
+  for (const t of mTags) t.el.remove();
+  mObjs.length = 0; mTags.length = 0; mPts.length = 0;
+  btnClear.hidden = true;
+});
+const ndc = new THREE.Vector2();
+function addMeasurePoint(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera); ray.far = 200;
+  const hits = ray.intersectObjects(solids.filter((g) => g.visible), true);
+  if (!hits.length) return;
+  const p = hits[0].point.clone();
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), mMat);
+  dot.position.copy(p); dot.renderOrder = 10; scene.add(dot); mObjs.push(dot);
+  mPts.push(p);
+  btnClear.hidden = false;
+  if (mPts.length % 2 === 0) {
+    const a = mPts[mPts.length - 2], b = p;
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lMat);
+    line.renderOrder = 10; scene.add(line); mObjs.push(line);
+    const el = document.createElement('div');
+    el.className = 'tag m';
+    el.textContent = `${a.distanceTo(b).toFixed(2).replace('.', ',')} m`;
+    labelsEl.appendChild(el);
+    mTags.push({ el, p: a.clone().add(b).multiplyScalar(0.5) });
+  }
+}
+
+// ---------------------------------------------------------------- aide
+function setHelp() {
+  const h = document.getElementById('help');
+  if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
+  if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
+  else h.innerHTML = isTouch ? 'Joystick pour marcher, glissez ailleurs pour regarder.'
+    : '<kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou les flèches pour marcher, glissez la souris pour regarder, <kbd>Maj</kbd> pour aller plus vite. L’escalier se monte en marchant.';
+}
+
+// ---------------------------------------------------------------- boucle
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+const clock = new THREE.Clock();
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (mode === 'visite') stepWalker(dt); else orbit.update();
+  for (const t of roomTags) placeTag(t.el, t.p);
+  for (const t of mTags) placeTag(t.el, t.p);
+  renderer.render(scene, camera);
+}
+window.__maison = { setMode, teleport, keys, walker, applyCut, camera,
+  probe(bx, by, bz, nobvh) {
+    if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
+    const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
+    const res = (nobvh ? rc.intersectObjects(solids, true) : rc.intersectObject(collider)).map((h) => [h.object.name, +h.point.y.toFixed(3), h.face && +h.face.normal.y.toFixed(2)]);
+    THREE.Mesh.prototype.raycast = acceleratedRaycast;
+    return res;
+  },
+  sim(code, secs) { keys.add(code); for (let i = 0; i < secs * 30; i++) stepWalker(1 / 30); keys.delete(code); } };
+</script>
+
+</body>
+</html>
