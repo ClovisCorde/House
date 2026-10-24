@@ -110,8 +110,31 @@ select#goto {
 #furnpanel .tool:disabled, #wallpanel .tool:disabled { opacity: 0.45; cursor: default; }
 .tool.danger { background: var(--measure); color: #fff; border-color: transparent; }
 .tool.danger:hover { background: var(--measure); filter: brightness(1.08); }
-#fp-count, #wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
-@media (max-width: 640px) { #furnpanel, #wallpanel { top: calc(env(safe-area-inset-top, 0px) + 168px); } }
+#ouvpanel {
+  top: calc(env(safe-area-inset-top, 0px) + 126px); left: max(16px, env(safe-area-inset-left, 0px));
+  padding: 12px 14px; display: grid; gap: 10px; width: min(340px, calc(100% - 32px));
+  max-height: calc(100% - 150px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto;
+}
+#ouvpanel .lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+#ouvpanel strong { font-family: var(--font-display); font-size: 17px; line-height: 1.2; display: block; }
+#ouvpanel .meta { color: var(--muted); font-size: 12.5px; }
+#ouvpanel .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#ouvpanel .sep { border-top: 1px solid var(--line); padding-top: 10px; }
+#ouvpanel .tool { border-color: var(--line); padding: 8px 11px; }
+#ouvpanel .tool:disabled { opacity: 0.45; cursor: default; }
+.opgrid { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; font-size: 13px; }
+.opgrid label { color: var(--muted); }
+.opgrid select, #op-add-type { font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; min-width: 0; }
+.num { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.num input { width: 64px; font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 7px; padding: 6px 6px; text-align: right; font-variant-numeric: tabular-nums; }
+.num span { color: var(--muted); font-size: 12px; }
+.num .tool { padding: 6px 10px; }
+.opmsg { margin: 0; font-size: 12.5px; color: var(--measure); }
+#op-count, #fp-count, #wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
+@media (max-width: 640px) {
+  #ouvpanel, #furnpanel, #wallpanel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); left: 10px; right: 10px; width: auto;
+    max-height: 52vh; overflow-y: auto; z-index: 6; }
+}
 #help {
   left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding: 9px 13px; font-size: 12.5px; color: var(--muted); max-width: min(420px, calc(100% - 32px)); line-height: 1.45;
@@ -169,6 +192,12 @@ select#goto {
 
 @media (max-width: 640px) {
   .brand p { display: none; }
+  #top { flex-wrap: nowrap; }
+  .brand { flex: 0 1 auto; padding: 9px 11px; }
+  .brand h1 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .right { gap: 6px; flex: 0 0 auto; }
+  #btn-gal { padding: 12px 10px; }
+  .seg button { padding: 9px 10px; }
   #sub { top: calc(env(safe-area-inset-top, 0px) + 64px); }
   #help { display: none; }
   #hud { left: auto; min-width: 0; padding: 10px 12px; }
@@ -210,7 +239,8 @@ select#goto {
     <button id="measure" class="tool" aria-pressed="false">Mesurer</button>
     <button id="clear" class="tool" hidden>Effacer</button>
     <button id="wallmode" class="tool" aria-pressed="false">Casser un mur</button>
-    <button id="furnmode" class="tool" aria-pressed="false">Éléments</button>
+    <button id="furnmode" class="tool" aria-pressed="false">Meubles</button>
+    <button id="ouvmode" class="tool" aria-pressed="false">Ouvertures</button>
   </div>
 </div>
 
@@ -233,7 +263,7 @@ select#goto {
 <aside id="furnpanel" class="ui panel" hidden aria-live="polite">
   <div>
     <span class="lvl" id="fp-lvl">Aucun élément sélectionné</span>
-    <strong id="fp-name">Cliquez un meuble, une porte ou une fenêtre</strong>
+    <strong id="fp-name">Cliquez un meuble ou un équipement</strong>
     <span class="meta" id="fp-meta">Tout peut être supprimé ; les meubles se déplacent en les faisant glisser.</span>
   </div>
   <div class="row">
@@ -250,6 +280,36 @@ select#goto {
     <span id="fp-count">Meubles d’origine</span>
     <button id="fp-undo" class="tool" disabled>Annuler</button>
     <button id="fp-reset" class="tool" disabled>Tout remettre</button>
+  </div>
+</aside>
+<aside id="ouvpanel" class="ui panel" hidden aria-live="polite">
+  <div>
+    <span class="lvl" id="op-lvl">Aucun mur sélectionné</span>
+    <strong id="op-name">Cliquez une fenêtre, une porte ou un mur</strong>
+    <span class="meta" id="op-meta"></span>
+  </div>
+  <div id="op-edit" class="opgrid" hidden>
+    <label for="op-type">Type</label>
+    <select id="op-type"></select>
+    <label for="op-w">Largeur</label>
+    <div class="num"><button class="tool" data-k="w" data-d="-5" aria-label="Réduire la largeur">−</button><input id="op-w" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-k="w" data-d="5" aria-label="Augmenter la largeur">+</button></div>
+    <label for="op-h">Hauteur</label>
+    <div class="num"><button class="tool" data-k="h" data-d="-5" aria-label="Réduire la hauteur">−</button><input id="op-h" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-k="h" data-d="5" aria-label="Augmenter la hauteur">+</button></div>
+    <label for="op-zb" id="op-zb-lbl">Allège</label>
+    <div class="num" id="op-zb-row"><button class="tool" data-k="zb" data-d="-5" aria-label="Descendre">−</button><input id="op-zb" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-k="zb" data-d="5" aria-label="Monter">+</button></div>
+    <label for="op-u">Position</label>
+    <div class="num"><button class="tool" data-k="u" data-d="-5" aria-label="Décaler d’un côté">−</button><input id="op-u" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-k="u" data-d="5" aria-label="Décaler de l’autre côté">+</button></div>
+  </div>
+  <div class="row">
+    <button id="op-del" class="tool danger" hidden>Supprimer l’ouverture</button>
+    <select id="op-add-type" hidden aria-label="Type d’ouverture à ajouter"></select>
+    <button id="op-add" class="tool" hidden>Ajouter ici</button>
+  </div>
+  <p id="op-msg" class="opmsg" hidden></p>
+  <div class="row sep">
+    <span id="op-count">Ouvertures d’origine</span>
+    <button id="op-undo" class="tool" disabled>Annuler</button>
+    <button id="op-reset" class="tool" disabled>Tout remettre</button>
   </div>
 </aside>
 <aside id="hud" class="ui panel" hidden aria-live="polite">
@@ -405,7 +465,8 @@ const onModelError = (err) => {
   console.error(err);
 };
 fetchModel().then((buf) => loader.parse(buf, '', onModel, onModelError)).catch(onModelError);
-function onModel(gltf) {
+function onModel(gltf) { onModelAsync(gltf).catch(onModelError); }
+async function onModelAsync(gltf) {
   gltf.scene.traverse((o) => {
     if (!o.isMesh) return;
     o.material = o.material.clone();            // une copie par niveau : chaque niveau a sa propre lightmap
@@ -434,6 +495,7 @@ function onModel(gltf) {
     return flat;
   };
   for (const [k, node] of Object.entries(groups)) {
+    if (k === 'MatLib') continue;
     const list = [];
     node.traverse((o) => { if (o.isMesh) list.push(flatGeo(o)); });
     if (k.startsWith('Mur_')) {
@@ -475,6 +537,8 @@ function onModel(gltf) {
   merged.computeBoundsTree();
   collider = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
   collider.updateMatrixWorld(true);
+  WDATA = await wallsP;
+  buildAllWalls(gltf.scene);
   document.getElementById('loading').hidden = true;
   if (USE_LIGHTMAPS) applyLightmaps().catch((e) => console.warn('Eclairage precalcule indisponible, eclairage simple utilise', e));
   restoreWalls();
@@ -524,7 +588,9 @@ function applyCut(c) {
   for (const [k, g] of Object.entries(groups)) {
     const w = walls[k];
     const f = furn[k];
-    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? present(f) && !hide.includes(f.level) : !hide.includes(k);
+    const pw = PW[k];
+    if (k === 'MatLib') { g.visible = false; continue; }
+    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? present(f) && !hide.includes(f.level) : pw ? !hide.includes(pw.level) : !hide.includes(k);
   }
   if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
   for (const b of document.querySelectorAll('[data-cut]')) b.setAttribute('aria-pressed', String(b.dataset.cut === String(c)));
@@ -574,6 +640,7 @@ function castFirst(origin, dir, far) {
   const targets = collider ? [collider] : [];
   for (const w of Object.values(walls)) if (!w.removed) targets.push(w.col);
   for (const f of Object.values(furn)) if (present(f)) targets.push(f.col);
+  for (const pw of Object.values(PW)) if (pw.def.kind === 'ext' && pw.col) targets.push(pw.col);
   const hits = ray.intersectObjects(targets, false);
   return hits.length ? hits[0] : null;
 }
@@ -662,6 +729,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
   if (moved < 6 && wallMode) pickWall(e.clientX, e.clientY);
   if (moved < 6 && furnMode && !furnDrag) pickFurn(e.clientX, e.clientY);
+  if (moved < 6 && ouvMode && !ouvDrag) pickOuv(e.clientX, e.clientY);
   drag = null;
 });
 canvas.addEventListener('pointercancel', () => { drag = null; });
@@ -770,11 +838,11 @@ const wp = {
 };
 const btnWall = document.getElementById('wallmode');
 function setGlow(w, on) {
-  w.node.traverse((o) => {
-    if (!o.isMesh) return;
-    o.material.emissive?.setHex(on ? 0xd2452f : 0x000000);
-    o.material.emissiveIntensity = on ? 0.45 : 1;
-  });
+  // les murs generes partagent leurs matieres : on surligne avec un volume translucide plutot qu'en teintant
+  const pw = PW[w.key];
+  if (!pw) return;
+  if (on) { const d = pw.def; ovWallMat.color.setHex(0xd2452f); placeBox(ovWall, d, d.a0, d.a1, d.tA - 0.03, d.tB + 0.03, d.z0, d.z1); }
+  else { ovWall.visible = false; ovWallMat.color.setHex(0xe0a020); }
 }
 function select(w) {
   if (selWall) setGlow(selWall, false);
@@ -832,6 +900,7 @@ function toggleWallMode(on) {
   if (!on) select(null);
   if (on && measuring) btnMeasure.click();
   if (on && furnMode) toggleFurnMode(false);
+  if (on && ouvMode) toggleOuvMode(false);
   renderPanel(); setHelp();
 }
 btnWall.addEventListener('click', () => toggleWallMode(!wallMode));
@@ -920,7 +989,7 @@ function renderFurnPanel() {
   for (const b of [fp.move, fp.r90, fp.r15, fp.del, fp.open, fp.wall, fp.reopen]) b.hidden = true;
   if (!f) {
     fp.lvl.textContent = 'Aucun élément sélectionné';
-    fp.name.textContent = 'Cliquez un meuble, une porte ou une fenêtre';
+    fp.name.textContent = 'Cliquez un meuble ou un équipement';
     fp.meta.textContent = 'Tout peut être supprimé ; les meubles se déplacent en les faisant glisser.';
   } else if (f.type === 'meuble') {
     fp.lvl.textContent = `Meuble ou équipement · ${LEVEL_LABEL[f.level]}`;
@@ -979,7 +1048,7 @@ function pickFurn(cx, cy) {
   if (f) { selectFurn(f); return; }
   selectFurn(null);
   fp.name.textContent = 'Rien à modifier ici';
-  fp.meta.textContent = 'Visez un meuble, une porte ou une fenêtre. Les cloisons se cassent avec « Casser un mur ».';
+  fp.meta.textContent = 'Visez un meuble ou un équipement. Portes et fenêtres : outil Ouvertures. Cloisons : Casser un mur.';
 }
 const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), dragHit = new THREE.Vector3();
 canvas.addEventListener('pointerdown', (e) => {
@@ -1017,6 +1086,7 @@ function toggleFurnMode(on) {
   if (!on) selectFurn(null);
   if (on && measuring) btnMeasure.click();
   if (on && wallMode) toggleWallMode(false);
+  if (on && ouvMode) toggleOuvMode(false);
   renderFurnPanel(); setHelp();
 }
 btnFurn.addEventListener('click', () => toggleFurnMode(!furnMode));
@@ -1055,6 +1125,478 @@ fp.reset.addEventListener('click', () => {
   commit();
 });
 
+// ---------------------------------------------------------------- murs generes en direct (facades + cloisons) et leurs ouvertures
+// walls.json (exporte depuis Blender) decrit chaque mur : plan, epaisseur, etendue, revetements de chaque face, ouvertures.
+// Le mur est decoupe en cellules par les bords des ouvertures et des revetements ; chaque cellule pleine donne ses deux faces,
+// et ses cotes donnent les tableaux autour des ouvertures. Les menuiseries sont generees selon le type d'ouverture.
+const wallsP = fetch('walls.json').then((r) => { if (!r.ok) throw new Error(`walls.json HTTP ${r.status}`); return r.json(); });
+let WDATA = null;
+const MATS = {}, TILES = {};
+const PW = {};                 // murs generes, par id : { def, ops, orig, group, col, level }
+const OSTORE = 'maison-ouvertures';
+const TYPES_EXT = [['fenetre', 'Fenêtre'], ['petite', 'Petite fenêtre'], ['porte_fenetre', 'Porte-fenêtre'], ['porte', 'Porte'], ['baie', 'Baie libre (sans menuiserie)']];
+const TYPES_INT = [['porte_int', 'Porte'], ['baie', 'Passage libre']];
+const TYPE_LABEL = Object.fromEntries([...TYPES_EXT, ...TYPES_INT]);
+const DEF = {   // dimensions par defaut quand on ajoute ou change de type (zb/zt relatifs au sol)
+  fenetre: { w: 0.95, zb: 0.85, zt: 2.30 }, petite: { w: 0.40, zb: 1.65, zt: 2.25 }, porte_fenetre: { w: 1.20, zb: 0.0, zt: 2.25 },
+  porte: { w: 0.95, zb: 0.0, zt: 2.20 }, baie: { w: 1.20, zb: 0.0, zt: 2.10 }, porte_int: { w: 0.80, zb: 0.0, zt: 2.04 },
+};
+const GAP = 0.15;              // ecart minimal entre deux ouvertures (trumeau)
+const isDoor = (t) => t === 'porte' || t === 'porte_int' || t === 'baie' || t === 'porte_fenetre';
+const baseName = (n) => n.replace(/\.\d+$/, '');
+const mat = (n) => MATS[n] || MATS.Platre || new THREE.MeshStandardMaterial({ color: 0xdddddd });
+
+// (u, t, z) du repere du mur -> (x, y, z) du plan
+const toPlan = (d, u, t, z) => (d.axis === 'x' ? [u, t, z] : [t, u, z]);
+
+class Builder {
+  constructor() { this.by = new Map(); }
+  arr(m) { if (!this.by.has(m)) this.by.set(m, { p: [], n: [], uv: [] }); return this.by.get(m); }
+  // quadrilatere : coin c0 (plan), aretes e1 e2 (plan), normale n (plan)
+  quad(m, c0, e1, e2, n) {
+    const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    if (cr[0] * n[0] + cr[1] * n[1] + cr[2] * n[2] < 0) { const t = e1; e1 = e2; e2 = t; }
+    const P = [c0, [c0[0] + e1[0], c0[1] + e1[1], c0[2] + e1[2]],
+      [c0[0] + e1[0] + e2[0], c0[1] + e1[1] + e2[1], c0[2] + e1[2] + e2[2]], [c0[0] + e2[0], c0[1] + e2[1], c0[2] + e2[2]]];
+    const [tx, ty] = TILES[m] || [1, 1];
+    const ax = Math.abs(n[0]), ay = Math.abs(n[1]), az = Math.abs(n[2]);
+    const uv = (p) => (az >= Math.max(ax, ay) ? [p[0] / tx, 1 - p[1] / ty] : ax >= ay ? [p[1] / tx, 1 - p[2] / ty] : [p[0] / tx, 1 - p[2] / ty]);
+    const a = this.arr(m);
+    for (const i of [0, 1, 2, 0, 2, 3]) {
+      const p = P[i];
+      a.p.push(p[0], p[2], -p[1]); a.n.push(n[0], n[2], -n[1]); a.uv.push(...uv(p));
+    }
+  }
+  box(m, x0, x1, y0, y1, z0, z1) {        // pave aligne sur les axes, en coordonnees plan
+    if (x1 - x0 < 1e-4 || y1 - y0 < 1e-4 || z1 - z0 < 1e-4) return;
+    const dx = [x1 - x0, 0, 0], dy = [0, y1 - y0, 0], dz = [0, 0, z1 - z0];
+    this.quad(m, [x0, y0, z0], dy, dz, [-1, 0, 0]); this.quad(m, [x1, y0, z0], dy, dz, [1, 0, 0]);
+    this.quad(m, [x0, y0, z0], dx, dz, [0, -1, 0]); this.quad(m, [x0, y1, z0], dx, dz, [0, 1, 0]);
+    this.quad(m, [x0, y0, z0], dx, dy, [0, 0, -1]); this.quad(m, [x0, y0, z1], dx, dy, [0, 0, 1]);
+  }
+  wbox(d, m, u0, u1, t0, t1, z0, z1) {    // pave dans le repere du mur
+    const [a0, b0] = [Math.min(u0, u1), Math.max(u0, u1)], [c0, c1] = [Math.min(t0, t1), Math.max(t0, t1)];
+    if (d.axis === 'x') this.box(m, a0, b0, c0, c1, z0, z1); else this.box(m, c0, c1, a0, b0, z0, z1);
+  }
+  mesh() {
+    const geo = new THREE.BufferGeometry();
+    const P = [], N = [], UV = [], mats = [];
+    let start = 0;
+    for (const [m, a] of this.by) {
+      P.push(...a.p); N.push(...a.n); UV.push(...a.uv);
+      const cnt = a.p.length / 3;
+      geo.addGroup(start, cnt, mats.length); mats.push(mat(m)); start += cnt;
+    }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+    return new THREE.Mesh(geo, mats);
+  }
+}
+
+function bandMat(face, u, z) {
+  let m = face.base;
+  for (const b of face.bands) if (u > b.u0 && u < b.u1 && z > b.z0 && z < b.z1) m = b.mat;   // tries : les plus petites en dernier
+  return m;
+}
+
+function buildWallBody(B, d, ops) {
+  const U = new Set([d.a0, d.a1]), Z = new Set([d.z0, d.z1]);
+  for (const o of ops) { U.add(o.u - o.w / 2); U.add(o.u + o.w / 2); Z.add(o.zb); Z.add(o.zt); }
+  for (const f of [d.faceA, d.faceB]) for (const b of f.bands) { U.add(b.u0); U.add(b.u1); Z.add(b.z0); Z.add(b.z1); }
+  const us = [...U].filter((v) => v >= d.a0 - 1e-6 && v <= d.a1 + 1e-6).sort((a, b) => a - b);
+  const zs = [...Z].filter((v) => v >= d.z0 - 1e-6 && v <= d.z1 + 1e-6).sort((a, b) => a - b);
+  const nu = us.length - 1, nz = zs.length - 1;
+  const solid = (i, j) => {
+    if (i < 0 || j < 0 || i >= nu || j >= nz) return null;
+    const uc = (us[i] + us[i + 1]) / 2, zc = (zs[j] + zs[j + 1]) / 2;
+    return !ops.some((o) => uc > o.u - o.w / 2 && uc < o.u + o.w / 2 && zc > o.zb && zc < o.zt);
+  };
+  const outerMat = d.kind === 'ext' ? (d.faceA.outer ? d.faceA.base : d.faceB.base) : 'Platre';
+  const T = d.tB - d.tA;
+  const nT = (s) => (d.axis === 'x' ? [0, s, 0] : [s, 0, 0]);
+  const nU = (s) => (d.axis === 'x' ? [s, 0, 0] : [0, s, 0]);
+  const vU = (l) => (d.axis === 'x' ? [l, 0, 0] : [0, l, 0]);
+  const vT = (l) => (d.axis === 'x' ? [0, l, 0] : [l, 0, 0]);
+  for (let i = 0; i < nu; i++) {
+    for (let j = 0; j < nz; j++) {
+      if (!solid(i, j)) continue;
+      const u0 = us[i], u1 = us[i + 1], z0 = zs[j], z1 = zs[j + 1], uc = (u0 + u1) / 2, zc = (z0 + z1) / 2;
+      const du = vU(u1 - u0), dz = [0, 0, z1 - z0];
+      B.quad(bandMat(d.faceA, uc, zc), toPlan(d, u0, d.tA, z0), du, dz, nT(-1));
+      B.quad(bandMat(d.faceB, uc, zc), toPlan(d, u0, d.tB, z0), du, dz, nT(1));
+      const L = solid(i - 1, j), R = solid(i + 1, j), Dn = solid(i, j - 1), Up = solid(i, j + 1);
+      if (!L) B.quad(L === null ? outerMat : 'Platre', toPlan(d, u0, d.tA, z0), vT(T), dz, nU(-1));
+      if (!R) B.quad(R === null ? outerMat : 'Platre', toPlan(d, u1, d.tA, z0), vT(T), dz, nU(1));
+      if (!Dn) B.quad(Dn === null ? outerMat : 'Platre', toPlan(d, u0, d.tA, z0), du, vT(T), [0, 0, -1]);
+      if (!Up) B.quad(Up === null ? outerMat : 'Platre', toPlan(d, u0, d.tA, z1), du, vT(T), [0, 0, 1]);
+    }
+  }
+}
+
+function buildJoinery(B, d, o) {
+  const s = o.u - o.w / 2, e = o.u + o.w / 2, zb = o.zb, zt = o.zt;
+  if (o.type === 'baie') return;
+  if (d.kind === 'int') {                       // porte interieure : chambranles + vantail ouvert a 90 deg
+    const jw = 0.07, pr = 0.015, top = Math.min(zt + jw, d.z1);
+    for (const [f, sg] of [[d.tA, -1], [d.tB, 1]]) {
+      B.wbox(d, 'Bois_pin', s - jw, s, f, f + sg * pr, zb, top);
+      B.wbox(d, 'Bois_pin', e, e + jw, f, f + sg * pr, zb, top);
+      B.wbox(d, 'Bois_pin', s - jw, e + jw, f, f + sg * pr, zt, top);
+    }
+    const side = o.side || 1, hinge = o.hinge || -1;
+    const face = side > 0 ? d.tB : d.tA, hu = hinge < 0 ? s : e;
+    B.wbox(d, 'Bois_pin', hu, hu + (hinge < 0 ? 0.04 : -0.04), face, face + side * (o.w - 0.02), zb + 0.01, zt - 0.01);
+    return;
+  }
+  const outerA = d.faceA.outer, tOut = outerA ? d.tA : d.tB, tIn = outerA ? d.tB : d.tA, sg = outerA ? -1 : 1;
+  const tm = tOut - sg * 0.16, fr = 0.055, dp = 0.03;
+  const north = d.side === 'N';
+  if (o.type === 'porte') {                     // porte d'entree vitree, ouverte vers l'interieur, imposte si haute
+    const zl = Math.min(zt, zb + 2.05);
+    B.wbox(d, 'Porte_entree', s, s + 0.06, tm - 0.035, tm + 0.035, zb, zt);
+    B.wbox(d, 'Porte_entree', e - 0.06, e, tm - 0.035, tm + 0.035, zb, zt);
+    B.wbox(d, 'Porte_entree', s + 0.06, s + 0.10, tm, tm - sg * (o.w - 0.12), zb, zl);   // vantail ouvert vers l'interieur
+    if (zt - zl > 0.12) {
+      B.wbox(d, 'Porte_entree', s, e, tm - 0.035, tm + 0.035, zl, zl + 0.07);
+      B.wbox(d, 'Verre', s + 0.06, e - 0.06, tm - 0.004, tm + 0.004, zl + 0.07, zt);
+    }
+  } else if (o.type === 'porte_fenetre') {      // dormant + vantaux vitres ouverts vers l'interieur (on peut passer)
+    B.wbox(d, 'Menuiserie', s, s + fr, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, 'Menuiserie', e - fr, e, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zt - fr, zt);
+    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zb, zb + 0.02);
+    const two = o.w > 0.75, L = (two ? (o.w - 2 * fr) / 2 : o.w - 2 * fr) - 0.01;
+    const leaf = (u0, u1) => {           // vantail perpendiculaire au mur, de tm vers l'interieur
+      const t0 = tm, t1 = tm - sg * L, z0 = zb + 0.02, z1 = zt - fr - 0.01;
+      B.wbox(d, 'Menuiserie', u0, u1, t0, t0 - sg * 0.06, z0, z1);
+      B.wbox(d, 'Menuiserie', u0, u1, t1 + sg * 0.06, t1, z0, z1);
+      B.wbox(d, 'Menuiserie', u0, u1, t0, t1, z0, z0 + 0.12);
+      B.wbox(d, 'Menuiserie', u0, u1, t0, t1, z1 - 0.06, z1);
+      for (let k = 1; k < 4; k++) { const zz = z0 + 0.12 + (k * (z1 - 0.06 - z0 - 0.12)) / 4; B.wbox(d, 'Menuiserie', u0 + 0.008, u1 - 0.008, t0, t1, zz - 0.012, zz + 0.012); }
+      const um = (u0 + u1) / 2;
+      B.wbox(d, 'Verre', um - 0.003, um + 0.003, t0 - sg * 0.06, t1 + sg * 0.06, z0 + 0.12, z1 - 0.06);
+    };
+    leaf(s + fr, s + fr + 0.045);
+    if (two) leaf(e - fr - 0.045, e - fr);
+    B.wbox(d, 'Volet_rouge', s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); B.wbox(d, 'Volet_rouge', e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt);
+  } else {                                      // fenetre, petite fenetre
+    B.wbox(d, 'Menuiserie', s, s + fr, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, 'Menuiserie', e - fr, e, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zb, zb + fr);
+    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zt - fr, zt);
+    if (o.type !== 'petite' && o.w > 0.55) B.wbox(d, 'Menuiserie', o.u - 0.035, o.u + 0.035, tm - dp, tm + dp, zb, zt);
+    const rows = o.type === 'petite' ? 2 : o.type === 'porte_fenetre' ? 4 : 3;
+    for (let k = 1; k < rows; k++) {
+      const zz = zb + fr + (k * (zt - zb - 2 * fr)) / rows;
+      B.wbox(d, 'Menuiserie', s, e, tm - 0.012, tm + 0.012, zz - 0.012, zz + 0.012);
+    }
+    B.wbox(d, 'Verre', s + fr, e - fr, tm - 0.003, tm + 0.003, zb + fr, zt - fr);
+    if (o.type !== 'porte_fenetre') B.wbox(d, 'Menuiserie', s - 0.03, e + 0.03, tm, tIn - sg * 0.03, zb - 0.03, zb);
+    if (o.type === 'petite') B.wbox(d, 'Volet_rouge', s, e, tOut - sg * 0.05, tOut - sg * 0.09, zb, zt);
+    else { B.wbox(d, 'Volet_rouge', s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); B.wbox(d, 'Volet_rouge', e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt); }
+  }
+  // encadrement exterieur : pierre sombre harpee cote rue, appui beton ailleurs
+  if (north) {
+    const p = 0.03;
+    B.wbox(d, 'Pierre_sombre', s - 0.24, e + 0.24, tOut, tOut + sg * p, zt, zt + 0.30);
+    if (!isDoor(o.type)) B.wbox(d, 'Pierre_sombre', s - 0.12, e + 0.12, tOut - sg * 0.10, tOut + sg * 0.06, zb - 0.10, zb);
+    let z = zb, k = 0;
+    while (z < zt - 0.02) {
+      const z2 = Math.min(z + 0.30, zt), wd = k % 2 === 0 ? 0.30 : 0.17;
+      B.wbox(d, 'Pierre_sombre', s - wd, s, tOut, tOut + sg * p, z, z2 - 0.006);
+      B.wbox(d, 'Pierre_sombre', e, e + wd, tOut, tOut + sg * p, z, z2 - 0.006);
+      z = z2; k++;
+    }
+  } else if (!isDoor(o.type)) {
+    B.wbox(d, 'Beton_clair', s - 0.08, e + 0.08, tOut + sg * 0.06, tOut - sg * 0.10, zb - 0.07, zb);
+  }
+}
+
+function colliderOf(mesh) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', mesh.geometry.getAttribute('position').clone());
+  g.computeBoundsTree();
+  const c = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+  c.updateMatrixWorld(true);
+  return c;
+}
+
+function rebuildWall(id, withCollider = true) {
+  const w = PW[id], d = w.def;
+  const B = new Builder();
+  buildWallBody(B, d, w.ops);
+  for (const o of w.ops) buildJoinery(B, d, o);
+  const mesh = B.mesh();
+  mesh.name = `${id}_maillage`;
+  if (w.mesh) { w.group.remove(w.mesh); w.mesh.geometry.dispose(); }
+  w.mesh = mesh;
+  w.group.add(mesh);
+  if (withCollider || !w.col) {
+    if (w.col) w.col.geometry.dispose();
+    w.col = colliderOf(mesh);
+    if (walls[id]) walls[id].col = w.col;
+  }
+}
+
+function buildAllWalls(gltfRoot) {
+  for (const k of Object.keys(TILES)) delete TILES[k];
+  Object.assign(TILES, WDATA.tiles || {});
+  gltfRoot.traverse((o) => { if (o.isMesh) { const n = baseName(o.material.name); if (!MATS[n]) MATS[n] = o.material; } });
+  if (groups.MatLib) groups.MatLib.visible = false;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(OSTORE) || '{}'); } catch (e) { saved = {}; }
+  for (const d of WDATA.walls) {
+    const group = new THREE.Group();
+    group.name = d.id;
+    scene.add(group);
+    const orig = d.openings.map((o) => ({ ...o }));
+    PW[d.id] = { def: d, orig, ops: (saved[d.id] || orig).map((o) => ({ ...o })), group, level: d.level };
+    groups[d.id] = group;
+    solids.push(group);
+    rebuildWall(d.id);
+    if (d.kind === 'int') {
+      walls[d.id] = { key: d.id, node: group, col: PW[d.id].col, base: d.base, level: d.level,
+        name: WALL_NAMES[d.base] || d.base, len: d.a1 - d.a0, removed: false };
+    }
+  }
+}
+
+// ---------------------------------------------------------------- editeur d'ouvertures
+let ouvMode = false, selW = null, selI = -1, selSpot = null, ouvDrag = null;
+const ouvHist = [];
+const op = {
+  panel: document.getElementById('ouvpanel'), lvl: document.getElementById('op-lvl'), name: document.getElementById('op-name'),
+  meta: document.getElementById('op-meta'), edit: document.getElementById('op-edit'), type: document.getElementById('op-type'),
+  w: document.getElementById('op-w'), h: document.getElementById('op-h'), zb: document.getElementById('op-zb'), u: document.getElementById('op-u'),
+  zbRow: document.getElementById('op-zb-row'), del: document.getElementById('op-del'), add: document.getElementById('op-add'),
+  addType: document.getElementById('op-add-type'), count: document.getElementById('op-count'), undo: document.getElementById('op-undo'),
+  reset: document.getElementById('op-reset'), msg: document.getElementById('op-msg'),
+};
+const btnOuv = document.getElementById('ouvmode');
+const cm = (v) => Math.round(v * 100);
+const wallLabel = (d) => (d.kind === 'ext' ? `${d.name}` : `Cloison ${WALL_NAMES[d.base] ? '· ' + WALL_NAMES[d.base].toLowerCase() : ''}`);
+
+// garde l'ouverture dans le mur, sans chevaucher les autres ; renvoie un message si on a du corriger
+function fitOpening(w, o, idx) {
+  const d = w.def, notes = [];
+  const span = d.lim[1] - d.lim[0];
+  const w0 = o.w;
+  o.w = Math.min(Math.max(o.w, 0.30), span);
+  if (isDoor(o.type)) { o.zt = o.zt - o.zb + d.floor; o.zb = d.floor; }
+  const maxTop = d.maxTop;
+  o.zb = Math.min(Math.max(o.zb, d.floor), maxTop - 0.30);
+  o.zt = Math.min(Math.max(o.zt, o.zb + 0.30), maxTop);
+  const lo = d.lim[0] + o.w / 2, hi = d.lim[1] - o.w / 2;
+  o.u = Math.min(Math.max(o.u, lo), hi);
+  const others = w.ops.filter((_, i) => i !== idx).sort((a, b) => a.u - b.u);
+  for (let pass = 0; pass < 3; pass++) {
+    for (const q of others) {
+      const minD = q.w / 2 + o.w / 2 + GAP;
+      if (Math.abs(o.u - q.u) < minD) o.u = o.u < q.u ? q.u - minD : q.u + minD;
+    }
+    o.u = Math.min(Math.max(o.u, lo), hi);
+  }
+  const clash = others.some((q) => Math.abs(o.u - q.u) < q.w / 2 + o.w / 2 + GAP - 1e-6);
+  if (clash) notes.push('Pas assez de place à cet endroit : réduisez la largeur ou déplacez une autre ouverture.');
+  if (Math.abs(o.w - w0) > 1e-6) notes.push('Largeur limitée à la longueur du mur.');
+  return { ok: !clash, notes };
+}
+function snapshot(...ids) { ouvHist.push(ids.map((id) => ({ id, ops: PW[id].ops.map((o) => ({ ...o })) }))); if (ouvHist.length > 200) ouvHist.shift(); }
+function saveOuv() {
+  const out = {};
+  for (const [id, w] of Object.entries(PW)) if (JSON.stringify(w.ops) !== JSON.stringify(w.orig)) out[id] = w.ops;
+  try { localStorage.setItem(OSTORE, JSON.stringify(out)); } catch (e) { /* stockage indisponible */ }
+}
+const changedWalls = () => Object.values(PW).filter((w) => JSON.stringify(w.ops) !== JSON.stringify(w.orig)).length;
+
+const ovMat = new THREE.MeshBasicMaterial({ color: 0x2b6cd1, transparent: true, opacity: 0.28, depthTest: false });
+const ovWallMat = new THREE.MeshBasicMaterial({ color: 0xe0a020, transparent: true, opacity: 0.16, depthTest: false });
+const ovOpen = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ovMat), ovWall = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ovWallMat);
+ovOpen.renderOrder = 20; ovWall.renderOrder = 19; ovOpen.visible = ovWall.visible = false;
+scene.add(ovOpen, ovWall);
+function placeBox(m, d, u0, u1, t0, t1, z0, z1) {
+  const [x0, y0] = toPlan(d, u0, t0, 0), [x1, y1] = toPlan(d, u1, t1, 0);
+  const a = b2t(Math.min(x0, x1), Math.max(y0, y1), z0), b = b2t(Math.max(x0, x1), Math.min(y0, y1), z1);
+  m.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+  m.scale.set(Math.abs(b.x - a.x) + 0.01, Math.abs(b.y - a.y) + 0.01, Math.abs(b.z - a.z) + 0.01);
+  m.visible = true;
+}
+function refreshOverlay() {
+  if (wallMode) return;
+  ovOpen.visible = ovWall.visible = false;
+  if (!ouvMode || !selW) return;
+  const d = selW.def;
+  placeBox(ovWall, d, d.a0, d.a1, d.tA - 0.02, d.tB + 0.02, d.z0, d.z1);
+  if (selI >= 0) { const o = selW.ops[selI]; placeBox(ovOpen, d, o.u - o.w / 2, o.u + o.w / 2, d.tA - 0.18, d.tB + 0.18, o.zb, o.zt); }
+}
+function renderOuvPanel(msg = '') {
+  op.msg.textContent = msg; op.msg.hidden = !msg;
+  op.edit.hidden = true; op.del.hidden = true; op.add.hidden = true; op.addType.hidden = true;
+  if (!selW) {
+    op.lvl.textContent = 'Aucun mur sélectionné';
+    op.name.textContent = 'Cliquez une fenêtre, une porte ou un mur';
+    op.meta.textContent = 'Façades et cloisons sont modifiables. Cliquez un mur plein pour y ajouter une ouverture.';
+  } else {
+    const d = selW.def;
+    op.lvl.textContent = `${d.kind === 'ext' ? 'Mur extérieur' : 'Cloison'} · ${LEVEL_LABEL[d.level]}`;
+    if (selI >= 0) {
+      const o = selW.ops[selI];
+      op.name.textContent = `${TYPE_LABEL[o.type] || o.type} · ${wallLabel(d)}`;
+      op.meta.textContent = 'Glissez l’ouverture le long du mur pour la déplacer, ou réglez les cotes.';
+      op.edit.hidden = false; op.del.hidden = false;
+      const types = d.kind === 'ext' ? TYPES_EXT : TYPES_INT;
+      op.type.innerHTML = types.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+      op.type.value = o.type;
+      op.w.value = cm(o.w); op.h.value = cm(o.zt - o.zb); op.zb.value = cm(o.zb - d.floor);
+      op.u.value = cm(o.u - o.w / 2 - d.lim[0]);
+      op.zbRow.hidden = isDoor(o.type); document.getElementById('op-zb-lbl').hidden = isDoor(o.type);
+    } else {
+      op.name.textContent = wallLabel(d);
+      op.meta.textContent = `${(d.lim[1] - d.lim[0]).toFixed(2).replace('.', ',')} m de long, ${cm(d.tB - d.tA)} cm d’épaisseur. Ajoutez une ouverture à l’endroit cliqué :`;
+      op.add.hidden = false; op.addType.hidden = false;
+      const types = d.kind === 'ext' ? TYPES_EXT : TYPES_INT;
+      op.addType.innerHTML = types.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    }
+  }
+  const n = changedWalls();
+  op.count.textContent = n ? `${n} mur${n > 1 ? 's' : ''} modifié${n > 1 ? 's' : ''}` : 'Ouvertures d’origine';
+  op.undo.disabled = !ouvHist.length; op.reset.disabled = !n;
+  refreshOverlay();
+}
+function wallHit(cx, cy) {
+  rayAt(cx, cy);
+  const targets = Object.values(PW).filter((w) => w.group.visible).map((w) => w.mesh);
+  const hits = ray.intersectObjects(targets, false);
+  if (!hits.length) return null;
+  const h = hits[0];
+  const id = h.object.name.replace(/_maillage$/, '');
+  const w = PW[id], d = w.def;
+  const p = h.point, bx = p.x, by = -p.z, bz = p.y;
+  const u = d.axis === 'x' ? bx : by;
+  return { w, u, z: bz, point: p };
+}
+function opIndexAt(w, u, z) {
+  return w.ops.findIndex((o) => u > o.u - o.w / 2 - 0.08 && u < o.u + o.w / 2 + 0.08 && z > o.zb - 0.12 && z < o.zt + 0.12);
+}
+function pickOuv(cx, cy) {
+  const hit = wallHit(cx, cy);
+  if (!hit) { selW = null; selI = -1; renderOuvPanel(); return; }
+  selW = hit.w; selI = opIndexAt(hit.w, hit.u, hit.z); selSpot = { u: hit.u, z: hit.z };
+  renderOuvPanel();
+}
+function applyEdit(mutator) {
+  if (!selW || selI < 0) return;
+  snapshot(selW.def.id);
+  const o = selW.ops[selI];
+  const before = { ...o };
+  mutator(o);
+  const r = fitOpening(selW, o, selI);
+  if (!r.ok) { Object.assign(o, before); ouvHist.pop(); renderOuvPanel(r.notes.join(' ')); return; }
+  rebuildWall(selW.def.id);
+  saveOuv();
+  renderOuvPanel(r.notes.join(' '));
+}
+op.type.addEventListener('change', () => applyEdit((o) => {
+  const t = op.type.value, df = DEF[t], d = selW.def;
+  o.type = t;
+  o.zb = d.floor + df.zb; o.zt = d.floor + df.zt;
+  if (t === 'petite') o.w = df.w;
+  if (t === 'porte_int' && !o.side) { o.side = 1; o.hinge = -1; }
+}));
+const numIn = (el, f) => el.addEventListener('change', () => { const v = parseFloat(el.value); if (Number.isFinite(v)) applyEdit((o) => f(o, v / 100)); else renderOuvPanel(); });
+numIn(op.w, (o, v) => { o.w = v; });
+numIn(op.h, (o, v) => { o.zt = o.zb + v; });
+numIn(op.zb, (o, v) => { const hgt = o.zt - o.zb; o.zb = selW.def.floor + v; o.zt = o.zb + hgt; });
+numIn(op.u, (o, v) => { o.u = selW.def.lim[0] + v + o.w / 2; });
+for (const b of document.querySelectorAll('#op-edit [data-k]')) {
+  b.addEventListener('click', () => {
+    const k = b.dataset.k, dv = parseFloat(b.dataset.d) / 100;
+    applyEdit((o) => {
+      if (k === 'w') { o.w += dv; } else if (k === 'h') { o.zt += dv; } else if (k === 'zb') { o.zb += dv; o.zt += dv; } else if (k === 'u') { o.u += dv; }
+    });
+  });
+}
+op.del.addEventListener('click', () => {
+  if (!selW || selI < 0) return;
+  snapshot(selW.def.id);
+  selW.ops.splice(selI, 1); selI = -1;
+  rebuildWall(selW.def.id); saveOuv(); renderOuvPanel('Ouverture supprimée : le mur est refermé.');
+});
+op.add.addEventListener('click', () => {
+  if (!selW || !selSpot) return;
+  const d = selW.def, t = op.addType.value, df = DEF[t];
+  const o = { u: selSpot.u, w: df.w, zb: d.floor + df.zb, zt: d.floor + df.zt, type: t };
+  if (t === 'porte_int') { o.side = 1; o.hinge = -1; }
+  snapshot(d.id);
+  selW.ops.push(o);
+  const idx = selW.ops.length - 1;
+  const r = fitOpening(selW, o, idx);
+  if (!r.ok) { selW.ops.pop(); ouvHist.pop(); renderOuvPanel(r.notes.join(' ')); return; }
+  selI = idx;
+  rebuildWall(d.id); saveOuv(); renderOuvPanel(r.notes.join(' '));
+});
+op.undo.addEventListener('click', () => {
+  const g = ouvHist.pop(); if (!g) return;
+  for (const h of g) { PW[h.id].ops = h.ops; if (selW === PW[h.id]) selI = -1; rebuildWall(h.id); }
+  saveOuv(); renderOuvPanel();
+});
+op.reset.addEventListener('click', () => {
+  const ids = Object.keys(PW).filter((id) => JSON.stringify(PW[id].ops) !== JSON.stringify(PW[id].orig));
+  if (!ids.length) return;
+  snapshot(...ids);
+  for (const id of ids) { PW[id].ops = PW[id].orig.map((o) => ({ ...o })); rebuildWall(id); }
+  selI = -1; saveOuv(); renderOuvPanel('Toutes les ouvertures sont revenues à l’origine.');
+});
+// glisser une ouverture le long de son mur
+const ouvPlane = new THREE.Plane(), ouvHit = new THREE.Vector3();
+canvas.addEventListener('pointerdown', (e) => {
+  if (!ouvMode || !selW || selI < 0 || e.button > 0) return;
+  const hit = wallHit(e.clientX, e.clientY);
+  if (!hit || hit.w !== selW || opIndexAt(selW, hit.u, hit.z) !== selI) return;
+  const d = selW.def;
+  const n = d.axis === 'x' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(1, 0, 0);
+  ouvPlane.setFromNormalAndCoplanarPoint(n, hit.point);
+  e.stopImmediatePropagation();
+  snapshot(d.id);
+  ouvDrag = { id: e.pointerId, du: selW.ops[selI].u - hit.u, moved: false };
+  canvas.setPointerCapture(e.pointerId);
+}, { capture: true });
+canvas.addEventListener('pointermove', (e) => {
+  if (!ouvDrag || ouvDrag.id !== e.pointerId) return;
+  rayAt(e.clientX, e.clientY);
+  if (!ray.ray.intersectPlane(ouvPlane, ouvHit)) return;
+  const d = selW.def, o = selW.ops[selI];
+  const u = (d.axis === 'x' ? ouvHit.x : -ouvHit.z) + ouvDrag.du;
+  const before = o.u;
+  o.u = u;
+  const r = fitOpening(selW, o, selI);
+  if (!r.ok) o.u = before;
+  ouvDrag.moved = true;
+  rebuildWall(d.id, false);
+  refreshOverlay();
+  op.u.value = cm(o.u - o.w / 2 - d.lim[0]);
+});
+const endOuvDrag = (e) => {
+  if (!ouvDrag || ouvDrag.id !== e.pointerId) return;
+  if (!ouvDrag.moved) ouvHist.pop();
+  ouvDrag = null;
+  rebuildWall(selW.def.id); saveOuv(); renderOuvPanel();
+};
+canvas.addEventListener('pointerup', endOuvDrag);
+canvas.addEventListener('pointercancel', endOuvDrag);
+function toggleOuvMode(on) {
+  ouvMode = on;
+  btnOuv.setAttribute('aria-pressed', String(on));
+  op.panel.hidden = !on;
+  if (!on) { selW = null; selI = -1; }
+  if (on && measuring) btnMeasure.click();
+  if (on && wallMode) toggleWallMode(false);
+  if (on && furnMode) toggleFurnMode(false);
+  renderOuvPanel(); setHelp();
+}
+btnOuv.addEventListener('click', () => toggleOuvMode(!ouvMode));
+
 // ---------------------------------------------------------------- outil de mesure
 let measuring = false;
 const mPts = [], mObjs = [], mTags = [];
@@ -1067,6 +1609,7 @@ btnMeasure.addEventListener('click', () => {
   btnMeasure.textContent = measuring ? 'Mesure active' : 'Mesurer';
   if (measuring && wallMode) toggleWallMode(false);
   if (measuring && furnMode) toggleFurnMode(false);
+  if (measuring && ouvMode) toggleOuvMode(false);
   setHelp();
 });
 btnClear.addEventListener('click', () => {
@@ -1102,7 +1645,8 @@ function addMeasurePoint(cx, cy) {
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
-  if (furnMode) { h.innerHTML = 'Cliquez un meuble, un équipement, une porte ou une fenêtre. Les meubles se déplacent en les faisant glisser ; les fenêtres peuvent être enlevées ou murées. <b>Vue du dessus</b> aide à placer les meubles.'; return; }
+  if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
+  if (furnMode) { h.innerHTML = 'Cliquez un meuble ou un équipement : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Vue du dessus</b> aide à les placer. Portes et fenêtres se règlent avec <b>Ouvertures</b>.'; return; }
   if (wallMode) { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
   if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
@@ -1174,7 +1718,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
+window.__maison = { PW, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
