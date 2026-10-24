@@ -640,7 +640,7 @@ function castFirst(origin, dir, far) {
   const targets = collider ? [collider] : [];
   for (const w of Object.values(walls)) if (!w.removed) targets.push(w.col);
   for (const f of Object.values(furn)) if (present(f)) targets.push(f.col);
-  for (const pw of Object.values(PW)) if (pw.def.kind === 'ext' && pw.col) targets.push(pw.col);
+  for (const pw of Object.values(PW)) if (pw.def.kind !== 'int' && pw.col) targets.push(pw.col);
   const hits = ray.intersectObjects(targets, false);
   return hits.length ? hits[0] : null;
 }
@@ -827,7 +827,7 @@ const WALL_NAMES = {
   Cl_deg_ch3: 'Dégagement / chambre 3', Cl_deg_ch4: 'Dégagement / chambre 4', Cl_ch3_ch4: 'Chambre 3 / chambre 4',
   Cl_dressing: 'Dressing / dégagement',
 };
-const LEVEL_LABEL = { RDC: 'Rez-de-chaussée', Etage1: '1er étage' };
+const LEVEL_LABEL = { RDC: 'Rez-de-chaussée', Etage1: '1er étage', Toiture: 'Toiture' };
 const STORE = 'maison-murs-abattus';
 let wallMode = false, selWall = null;
 const removedOrder = [];
@@ -1136,10 +1136,13 @@ const PW = {};                 // murs generes, par id : { def, ops, orig, group
 const OSTORE = 'maison-ouvertures';
 const TYPES_EXT = [['fenetre', 'Fenêtre'], ['petite', 'Petite fenêtre'], ['porte_fenetre', 'Porte-fenêtre'], ['porte', 'Porte'], ['baie', 'Baie libre (sans menuiserie)']];
 const TYPES_INT = [['porte_int', 'Porte'], ['baie', 'Passage libre']];
-const TYPE_LABEL = Object.fromEntries([...TYPES_EXT, ...TYPES_INT]);
+const TYPES_ROOF = [['velux', 'Fenêtre de toit']];
+const TYPE_LABEL = Object.fromEntries([...TYPES_EXT, ...TYPES_INT, ...TYPES_ROOF]);
+const typesOf = (d) => (d.kind === 'ext' ? TYPES_EXT : d.kind === 'roof' ? TYPES_ROOF : TYPES_INT);
 const DEF = {   // dimensions par defaut quand on ajoute ou change de type (zb/zt relatifs au sol)
   fenetre: { w: 0.95, zb: 0.85, zt: 2.30 }, petite: { w: 0.40, zb: 1.65, zt: 2.25 }, porte_fenetre: { w: 1.20, zb: 0.0, zt: 2.25 },
   porte: { w: 0.95, zb: 0.0, zt: 2.20 }, baie: { w: 1.20, zb: 0.0, zt: 2.10 }, porte_int: { w: 0.80, zb: 0.0, zt: 2.04 },
+  velux: { w: 0.78, zb: 0.0, zt: 1.18 },        // toit : zb/zt = distances le long de la pente depuis l'egout
 };
 const GAP = 0.15;              // ecart minimal entre deux ouvertures (trumeau)
 const isDoor = (t) => t === 'porte' || t === 'porte_int' || t === 'baie' || t === 'porte_fenetre';
@@ -1166,6 +1169,14 @@ class Builder {
       const p = P[i];
       a.p.push(p[0], p[2], -p[1]); a.n.push(n[0], n[2], -n[1]); a.uv.push(...uv(p));
     }
+  }
+  // triangle (points plan [x,y,z]), uv donnes, oriente selon la normale n
+  tri(m, a, b, c, n, ua, ub, uc) {
+    const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    if (cr[0] * n[0] + cr[1] * n[1] + cr[2] * n[2] < 0) { [b, c] = [c, b]; [ub, uc] = [uc, ub]; }
+    const A = this.arr(m);
+    for (const [p, uv] of [[a, ua], [b, ub], [c, uc]]) { A.p.push(p[0], p[2], -p[1]); A.n.push(n[0], n[2], -n[1]); A.uv.push(uv[0], uv[1]); }
   }
   box(m, x0, x1, y0, y1, z0, z1) {        // pave aligne sur les axes, en coordonnees plan
     if (x1 - x0 < 1e-4 || y1 - y0 < 1e-4 || z1 - z0 < 1e-4) return;
@@ -1325,8 +1336,8 @@ function colliderOf(mesh) {
 function rebuildWall(id, withCollider = true) {
   const w = PW[id], d = w.def;
   const B = new Builder();
-  buildWallBody(B, d, w.ops);
-  for (const o of w.ops) buildJoinery(B, d, o);
+  if (d.kind === 'roof') { buildRoofPan(B, d, w.ops); for (const o of w.ops) buildVelux(B, d, o); }
+  else { buildWallBody(B, d, w.ops); for (const o of w.ops) buildJoinery(B, d, o); }
   const mesh = B.mesh();
   mesh.name = `${id}_maillage`;
   if (w.mesh) { w.group.remove(w.mesh); w.mesh.geometry.dispose(); }
@@ -1339,6 +1350,148 @@ function rebuildWall(id, withCollider = true) {
   }
 }
 
+
+// ---------------------------------------------------------------- toiture generee : 4 pans percables (fenetres de toit)
+// Chaque pan est decrit dans son repere : U le long de l'egout, V qui monte la pente, N vers l'exterieur (dessous du pan = t 0).
+const PAN_IDS = ['S', 'E', 'N', 'O'];
+const PAN_NAME = { S: 'Pan de toit arrière', E: 'Croupe côté grange', N: 'Pan de toit côté rue', O: 'Croupe côté potager' };
+const ROOF_M = 0.30;            // marge aux aretes et a l'egout
+const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+function roofDefs(t) {
+  const defs = [];
+  t.faces.forEach((f, k) => {
+    const side = PAN_IDS[k];
+    const Bv = f.map((i) => V3(t.bot[i])), Tv = f.map((i) => V3(t.top[i]));
+    const O = Bv[0].clone(), U = Bv[1].clone().sub(Bv[0]).normalize();
+    const N = Bv[1].clone().sub(Bv[0]).cross(Bv[2].clone().sub(Bv[1])).normalize();
+    const V = N.clone().cross(U);
+    const NT = Tv[1].clone().sub(Tv[0]).cross(Tv[2].clone().sub(Tv[1])).normalize();
+    const VT = NT.clone().cross(U);
+    const d = { id: `toit_${side}`, kind: 'roof', level: 'Toiture', side, name: PAN_NAME[side], O, U, V, N, NT, VT, PT: Tv[0].clone(), bot: Bv, top: Tv };
+    d.poly = Bv.map((p) => [p.clone().sub(O).dot(U), p.clone().sub(O).dot(V)]);
+    const us = d.poly.map((p) => p[0]), vs = d.poly.map((p) => p[1]);
+    Object.assign(d, { a0: Math.min(...us), a1: Math.max(...us), z0: 0, z1: Math.max(...vs), floor: 0, tA: 0, tB: 0.22 });
+    d.lim = [d.a0 + ROOF_M, d.a1 - ROOF_M]; d.maxTop = d.z1 - ROOF_M;
+    // souche de cheminee : emprise projetee verticalement sur le pan = zone interdite
+    const [x0, x1, y0, y1] = t.souche;
+    const c = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => roofUV(d, x, y, O.z - (N.x * (x - O.x) + N.y * (y - O.y)) / N.z));
+    d.block = [Math.min(...c.map((q) => q[0])), Math.max(...c.map((q) => q[0])), Math.min(...c.map((q) => q[1])), Math.max(...c.map((q) => q[1]))];
+    d.openings = t.velux.filter((v) => v.pan === side).map((v) => {
+      const q = [[v.x0, v.y0], [v.x1, v.y0], [v.x1, v.y1], [v.x0, v.y1]].map(([x, y]) => roofUV(d, x, y, O.z - (N.x * (x - O.x) + N.y * (y - O.y)) / N.z));
+      const u0 = Math.min(...q.map((a) => a[0])), u1 = Math.max(...q.map((a) => a[0]));
+      return { type: 'velux', u: (u0 + u1) / 2, w: u1 - u0, zb: Math.min(...q.map((a) => a[1])), zt: Math.max(...q.map((a) => a[1])) };
+    });
+    defs.push(d);
+  });
+  return defs;
+}
+function roofUV(d, x, y, z) { const p = new THREE.Vector3(x - d.O.x, y - d.O.y, z - d.O.z); return [p.dot(d.U), p.dot(d.V)]; }
+const roofPt = (d, u, v, t = 0) => d.O.clone().addScaledVector(d.U, u).addScaledVector(d.V, v).addScaledVector(d.N, t);
+// point du dessus de la couverture a l'aplomb (le long de N) d'un point du dessous
+const roofTopOf = (d, p) => p.clone().addScaledVector(d.N, d.PT.clone().sub(p).dot(d.NT) / d.N.dot(d.NT));
+
+function buildRoofPan(B, d, ops) {
+  const [tx, ty] = TILES.Tuiles || [1, 1], [vx, vy] = TILES.Voliges || [1, 1];
+  const holes = ops.map((o) => [[o.u - o.w / 2, o.zb], [o.u + o.w / 2, o.zb], [o.u + o.w / 2, o.zt], [o.u - o.w / 2, o.zt]]);
+  // dessous (voliges)
+  const nb = d.N.clone().negate().toArray();
+  const pts2 = [d.poly, ...holes].flat();
+  const v2 = (a) => a.map(([u, v]) => new THREE.Vector2(u, v));
+  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(v2(d.poly), holes.map(v2))) {
+    const P = [i, j, k].map((n) => roofPt(d, pts2[n][0], pts2[n][1]).toArray());
+    const UV = [i, j, k].map((n) => [pts2[n][0] / vx, 1 - pts2[n][1] / vy]);
+    B.tri('Voliges', P[0], P[1], P[2], nb, UV[0], UV[1], UV[2]);
+  }
+  // dessus (tuiles) : contour = sommets reels du dessus, trous projetes le long de N
+  const topPts = [...d.top, ...holes.flat().map(([u, v]) => roofTopOf(d, roofPt(d, u, v)))];
+  const t2 = topPts.map((p) => { const q = p.clone().sub(d.PT); return [q.dot(d.U), q.dot(d.VT)]; });
+  const nt = d.NT.toArray(), nTop = d.top.length;
+  const holes2 = holes.map((_, h) => t2.slice(nTop + 4 * h, nTop + 4 * h + 4));
+  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(v2(t2.slice(0, nTop)), holes2.map(v2))) {
+    const P = [i, j, k].map((n) => topPts[n].toArray());
+    const UV = [i, j, k].map((n) => { const [u, v] = roofUV(d, ...topPts[n].toArray()); return [u / tx, 1 - v / ty]; });
+    B.tri('Tuiles', P[0], P[1], P[2], nt, UV[0], UV[1], UV[2]);
+  }
+  // rive d'egout
+  const quad4 = (m, a, b, c, e, n) => {
+    const L = a.distanceTo(b), H = a.distanceTo(e);
+    B.tri(m, a.toArray(), b.toArray(), c.toArray(), n, [0, 0], [L, 0], [L, H]);
+    B.tri(m, a.toArray(), c.toArray(), e.toArray(), n, [0, 0], [L, H], [0, H]);
+  };
+  quad4('Voliges', d.bot[0], d.bot[1], d.top[1], d.top[0], d.V.clone().negate().toArray());
+  // tableaux des tremies
+  for (const hq of holes) {
+    const b = hq.map(([u, v]) => roofPt(d, u, v)), t = b.map((p) => roofTopOf(d, p));
+    const ns = [d.V, d.U.clone().negate(), d.V.clone().negate(), d.U];
+    for (let k = 0; k < 4; k++) quad4('Voliges', b[k], b[(k + 1) % 4], t[(k + 1) % 4], t[k], ns[k].toArray());
+  }
+}
+
+function fbox(B, d, m, u0, u1, v0, v1, t0, t1) {     // pave dans le repere du pan
+  const P = (u, v, t) => roofPt(d, u, v, t).toArray();
+  const sc = (vec, l) => vec.clone().multiplyScalar(l).toArray();
+  const eu = sc(d.U, u1 - u0), ev = sc(d.V, v1 - v0), et = sc(d.N, t1 - t0);
+  const nu = d.U.toArray(), nv = d.V.toArray(), nn = d.N.toArray(), neg = (a) => a.map((x) => -x);
+  B.quad(m, P(u0, v0, t0), ev, et, neg(nu)); B.quad(m, P(u1, v0, t0), ev, et, nu);
+  B.quad(m, P(u0, v0, t0), eu, et, neg(nv)); B.quad(m, P(u0, v1, t0), eu, et, nv);
+  B.quad(m, P(u0, v0, t0), eu, ev, neg(nn)); B.quad(m, P(u0, v0, t1), eu, ev, nn);
+}
+function buildVelux(B, d, o) {
+  const s = o.u - o.w / 2, e = o.u + o.w / 2, v0 = o.zb, v1 = o.zt;
+  const tc = roofTopOf(d, roofPt(d, o.u, (v0 + v1) / 2)).sub(roofPt(d, o.u, (v0 + v1) / 2)).dot(d.N);
+  const f = 0.065, top = tc + 0.10;
+  // cadre et ouvrant (aluminium gris anthracite), depasse de la couverture
+  fbox(B, d, 'Velux', s, s + f, v0, v1, tc - 0.12, top); fbox(B, d, 'Velux', e - f, e, v0, v1, tc - 0.12, top);
+  fbox(B, d, 'Velux', s + f, e - f, v0, v0 + f, tc - 0.12, top); fbox(B, d, 'Velux', s + f, e - f, v1 - f, v1, tc - 0.12, top + 0.02);
+  fbox(B, d, 'Verre', s + f, e - f, v0 + f, v1 - f, top - 0.025, top - 0.015);
+  // raccord d'etancheite en zinc autour
+  fbox(B, d, 'Zinc', s - 0.08, s, v0 - 0.06, v1 + 0.10, tc, tc + 0.02); fbox(B, d, 'Zinc', e, e + 0.08, v0 - 0.06, v1 + 0.10, tc, tc + 0.02);
+  fbox(B, d, 'Zinc', s, e, v0 - 0.14, v0, tc, tc + 0.03); fbox(B, d, 'Zinc', s, e, v1, v1 + 0.10, tc, tc + 0.02);
+  // poignee de manoeuvre en haut, cote interieur
+  fbox(B, d, 'Velux', o.u - 0.15, o.u + 0.15, v1 - 0.10, v1 - 0.06, -0.04, 0);
+}
+
+// garde la fenetre de toit dans le pan (marge aux aretes), hors de la souche et des autres fenetres
+function fitRoof(w, o, idx) {
+  const d = w.def, notes = [];
+  const h0 = o.zt - o.zb, w0 = o.w;
+  o.w = Math.min(Math.max(o.w, 0.40), 1.80);
+  const h = Math.min(Math.max(h0, 0.50), 2.00);
+  o.zt = o.zb + h;
+  const P = d.poly, n = P.length;
+  const viol = () => {
+    let worst = null;
+    for (let k = 0; k < n; k++) {
+      const [ax, ay] = P[k], [bx, by] = P[(k + 1) % n];
+      const L = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / L, ny = (bx - ax) / L;
+      for (const [cu, cv] of [[o.u - o.w / 2, o.zb], [o.u + o.w / 2, o.zb], [o.u + o.w / 2, o.zt], [o.u - o.w / 2, o.zt]]) {
+        const def = ROOF_M - ((cu - ax) * nx + (cv - ay) * ny);
+        if (def > 1e-6 && (!worst || def > worst.def)) worst = { def, nx, ny };
+      }
+    }
+    return worst;
+  };
+  for (let it = 0; it < 40; it++) {
+    const v = viol(); if (!v) break;
+    o.u += v.nx * (v.def + 1e-4); o.zb += v.ny * (v.def + 1e-4); o.zt = o.zb + h;
+  }
+  if (viol()) return { ok: false, notes: ['La fenêtre ne tient pas sur ce pan : réduisez-la.'] };
+  const hit = (q, g) => Math.abs(o.u - q.u) < q.w / 2 + o.w / 2 + g && o.zb < q.zt + g && o.zt > q.zb - g;
+  if (hit({ u: (d.block[0] + d.block[1]) / 2, w: d.block[1] - d.block[0], zb: d.block[2], zt: d.block[3] }, 0.10))
+    return { ok: false, notes: ['La souche de cheminée est à cet endroit.'] };
+  if (w.ops.some((q, i) => i !== idx && hit(q, GAP))) return { ok: false, notes: ['Trop près d’une autre fenêtre de toit.'] };
+  if (Math.abs(o.w - w0) > 1e-6 || Math.abs(h - h0) > 1e-6) notes.push('Taille limitée (de 40 × 50 cm à 180 × 200 cm).');
+  return { ok: true, notes };
+}
+function placeRoofBox(m, d, u0, u1, v0, v1, t0, t1) {
+  const c = roofPt(d, (u0 + u1) / 2, (v0 + v1) / 2, (t0 + t1) / 2);
+  m.position.set(c.x, c.z, -c.y);
+  const T = (a) => new THREE.Vector3(a.x, a.z, -a.y);
+  m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(T(d.U), T(d.V), T(d.N)));
+  m.scale.set(Math.abs(u1 - u0) + 0.01, Math.abs(v1 - v0) + 0.01, Math.abs(t1 - t0) + 0.01);
+  m.visible = true;
+}
+
 function buildAllWalls(gltfRoot) {
   for (const k of Object.keys(TILES)) delete TILES[k];
   Object.assign(TILES, WDATA.tiles || {});
@@ -1346,7 +1499,8 @@ function buildAllWalls(gltfRoot) {
   if (groups.MatLib) groups.MatLib.visible = false;
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(OSTORE) || '{}'); } catch (e) { saved = {}; }
-  for (const d of WDATA.walls) {
+  const defs = [...WDATA.walls, ...(WDATA.toit ? roofDefs(WDATA.toit) : [])];
+  for (const d of defs) {
     const group = new THREE.Group();
     group.name = d.id;
     scene.add(group);
@@ -1375,10 +1529,11 @@ const op = {
 };
 const btnOuv = document.getElementById('ouvmode');
 const cm = (v) => Math.round(v * 100);
-const wallLabel = (d) => (d.kind === 'ext' ? `${d.name}` : `Cloison ${WALL_NAMES[d.base] ? '· ' + WALL_NAMES[d.base].toLowerCase() : ''}`);
+const wallLabel = (d) => (d.kind !== 'int' ? `${d.name}` : `Cloison ${WALL_NAMES[d.base] ? '· ' + WALL_NAMES[d.base].toLowerCase() : ''}`);
 
 // garde l'ouverture dans le mur, sans chevaucher les autres ; renvoie un message si on a du corriger
 function fitOpening(w, o, idx) {
+  if (w.def.kind === 'roof') return fitRoof(w, o, idx);
   const d = w.def, notes = [];
   const span = d.lim[1] - d.lim[0];
   const w0 = o.w;
@@ -1416,6 +1571,8 @@ const ovOpen = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ovMat), ovWall = n
 ovOpen.renderOrder = 20; ovWall.renderOrder = 19; ovOpen.visible = ovWall.visible = false;
 scene.add(ovOpen, ovWall);
 function placeBox(m, d, u0, u1, t0, t1, z0, z1) {
+  m.quaternion.identity();
+  if (d.kind === 'roof') { placeRoofBox(m, d, u0, u1, z0, z1, t0, t1); return; }
   const [x0, y0] = toPlan(d, u0, t0, 0), [x1, y1] = toPlan(d, u1, t1, 0);
   const a = b2t(Math.min(x0, x1), Math.max(y0, y1), z0), b = b2t(Math.max(x0, x1), Math.min(y0, y1), z1);
   m.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
@@ -1428,7 +1585,7 @@ function refreshOverlay() {
   if (!ouvMode || !selW) return;
   const d = selW.def;
   placeBox(ovWall, d, d.a0, d.a1, d.tA - 0.02, d.tB + 0.02, d.z0, d.z1);
-  if (selI >= 0) { const o = selW.ops[selI]; placeBox(ovOpen, d, o.u - o.w / 2, o.u + o.w / 2, d.tA - 0.18, d.tB + 0.18, o.zb, o.zt); }
+  if (selI >= 0) { const o = selW.ops[selI]; const x = d.kind === 'roof' ? 0.05 : 0.18; placeBox(ovOpen, d, o.u - o.w / 2, o.u + o.w / 2, d.tA - x, d.tB + x, o.zb, o.zt); }
 }
 function renderOuvPanel(msg = '') {
   op.msg.textContent = msg; op.msg.hidden = !msg;
@@ -1436,16 +1593,17 @@ function renderOuvPanel(msg = '') {
   if (!selW) {
     op.lvl.textContent = 'Aucun mur sélectionné';
     op.name.textContent = 'Cliquez une fenêtre, une porte ou un mur';
-    op.meta.textContent = 'Façades et cloisons sont modifiables. Cliquez un mur plein pour y ajouter une ouverture.';
+    op.meta.textContent = 'Façades, cloisons et toit sont modifiables. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture.';
   } else {
     const d = selW.def;
-    op.lvl.textContent = `${d.kind === 'ext' ? 'Mur extérieur' : 'Cloison'} · ${LEVEL_LABEL[d.level]}`;
+    op.lvl.textContent = d.kind === 'roof' ? 'Toiture' : `${d.kind === 'ext' ? 'Mur extérieur' : 'Cloison'} · ${LEVEL_LABEL[d.level]}`;
+    document.getElementById('op-zb-lbl').textContent = d.kind === 'roof' ? 'Depuis l’égout' : 'Allège';
     if (selI >= 0) {
       const o = selW.ops[selI];
       op.name.textContent = `${TYPE_LABEL[o.type] || o.type} · ${wallLabel(d)}`;
-      op.meta.textContent = 'Glissez l’ouverture le long du mur pour la déplacer, ou réglez les cotes.';
+      op.meta.textContent = d.kind === 'roof' ? 'Glissez la fenêtre sur le pan pour la déplacer, ou réglez les cotes.' : 'Glissez l’ouverture le long du mur pour la déplacer, ou réglez les cotes.';
       op.edit.hidden = false; op.del.hidden = false;
-      const types = d.kind === 'ext' ? TYPES_EXT : TYPES_INT;
+      const types = typesOf(d);
       op.type.innerHTML = types.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
       op.type.value = o.type;
       op.w.value = cm(o.w); op.h.value = cm(o.zt - o.zb); op.zb.value = cm(o.zb - d.floor);
@@ -1453,9 +1611,11 @@ function renderOuvPanel(msg = '') {
       op.zbRow.hidden = isDoor(o.type); document.getElementById('op-zb-lbl').hidden = isDoor(o.type);
     } else {
       op.name.textContent = wallLabel(d);
-      op.meta.textContent = `${(d.lim[1] - d.lim[0]).toFixed(2).replace('.', ',')} m de long, ${cm(d.tB - d.tA)} cm d’épaisseur. Ajoutez une ouverture à l’endroit cliqué :`;
+      op.meta.textContent = d.kind === 'roof'
+        ? `Pan de ${(d.a1 - d.a0).toFixed(2).replace('.', ',')} m à l’égout, ${(d.z1).toFixed(2).replace('.', ',')} m de rampant. Ajoutez une fenêtre de toit à l’endroit cliqué :`
+        : `${(d.lim[1] - d.lim[0]).toFixed(2).replace('.', ',')} m de long, ${cm(d.tB - d.tA)} cm d’épaisseur. Ajoutez une ouverture à l’endroit cliqué :`;
       op.add.hidden = false; op.addType.hidden = false;
-      const types = d.kind === 'ext' ? TYPES_EXT : TYPES_INT;
+      const types = typesOf(d);
       op.addType.innerHTML = types.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     }
   }
@@ -1473,6 +1633,7 @@ function wallHit(cx, cy) {
   const id = h.object.name.replace(/_maillage$/, '');
   const w = PW[id], d = w.def;
   const p = h.point, bx = p.x, by = -p.z, bz = p.y;
+  if (d.kind === 'roof') { const [u, v] = roofUV(d, bx, by, bz); return { w, u, z: v, point: p }; }
   const u = d.axis === 'x' ? bx : by;
   return { w, u, z: bz, point: p };
 }
@@ -1526,7 +1687,8 @@ op.del.addEventListener('click', () => {
 op.add.addEventListener('click', () => {
   if (!selW || !selSpot) return;
   const d = selW.def, t = op.addType.value, df = DEF[t];
-  const o = { u: selSpot.u, w: df.w, zb: d.floor + df.zb, zt: d.floor + df.zt, type: t };
+  const o = d.kind === 'roof' ? { u: selSpot.u, w: df.w, zb: selSpot.z - (df.zt - df.zb) / 2, zt: selSpot.z + (df.zt - df.zb) / 2, type: t }
+    : { u: selSpot.u, w: df.w, zb: d.floor + df.zb, zt: d.floor + df.zt, type: t };
   if (t === 'porte_int') { o.side = 1; o.hinge = -1; }
   snapshot(d.id);
   selW.ops.push(o);
@@ -1555,11 +1717,11 @@ canvas.addEventListener('pointerdown', (e) => {
   const hit = wallHit(e.clientX, e.clientY);
   if (!hit || hit.w !== selW || opIndexAt(selW, hit.u, hit.z) !== selI) return;
   const d = selW.def;
-  const n = d.axis === 'x' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(1, 0, 0);
+  const n = d.kind === 'roof' ? new THREE.Vector3(d.N.x, d.N.z, -d.N.y) : d.axis === 'x' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(1, 0, 0);
   ouvPlane.setFromNormalAndCoplanarPoint(n, hit.point);
   e.stopImmediatePropagation();
   snapshot(d.id);
-  ouvDrag = { id: e.pointerId, du: selW.ops[selI].u - hit.u, moved: false };
+  ouvDrag = { id: e.pointerId, du: selW.ops[selI].u - hit.u, dz: selW.ops[selI].zb - hit.z, moved: false };
   canvas.setPointerCapture(e.pointerId);
 }, { capture: true });
 canvas.addEventListener('pointermove', (e) => {
@@ -1567,15 +1729,18 @@ canvas.addEventListener('pointermove', (e) => {
   rayAt(e.clientX, e.clientY);
   if (!ray.ray.intersectPlane(ouvPlane, ouvHit)) return;
   const d = selW.def, o = selW.ops[selI];
-  const u = (d.axis === 'x' ? ouvHit.x : -ouvHit.z) + ouvDrag.du;
-  const before = o.u;
-  o.u = u;
+  const before = { ...o };
+  if (d.kind === 'roof') {
+    const [u, v] = roofUV(d, ouvHit.x, -ouvHit.z, ouvHit.y);
+    const h = o.zt - o.zb;
+    o.u = u + ouvDrag.du; o.zb = v + ouvDrag.dz; o.zt = o.zb + h;
+  } else o.u = (d.axis === 'x' ? ouvHit.x : -ouvHit.z) + ouvDrag.du;
   const r = fitOpening(selW, o, selI);
-  if (!r.ok) o.u = before;
+  if (!r.ok) Object.assign(o, before);
   ouvDrag.moved = true;
   rebuildWall(d.id, false);
   refreshOverlay();
-  op.u.value = cm(o.u - o.w / 2 - d.lim[0]);
+  op.u.value = cm(o.u - o.w / 2 - d.lim[0]); op.zb.value = cm(o.zb - d.floor);
 });
 const endOuvDrag = (e) => {
   if (!ouvDrag || ouvDrag.id !== e.pointerId) return;
@@ -1645,7 +1810,7 @@ function addMeasurePoint(cx, cy) {
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
-  if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
+  if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
   if (furnMode) { h.innerHTML = 'Cliquez un meuble ou un équipement : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Vue du dessus</b> aide à les placer. Portes et fenêtres se règlent avec <b>Ouvertures</b>.'; return; }
   if (wallMode) { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
