@@ -130,6 +130,8 @@ select#goto {
 .num span { color: var(--muted); font-size: 12px; }
 .num .tool { padding: 6px 10px; }
 .opmsg { margin: 0; font-size: 12.5px; color: var(--measure); }
+#wallpanel .wp-modes { padding: 0; }
+#wallpanel .wp-modes button { flex: 1; padding: 9px 8px; border: 1px solid var(--line); }
 #op-count, #fp-count, #wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
 @media (max-width: 640px) {
   #ouvpanel, #furnpanel, #wallpanel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); left: 10px; right: 10px; width: auto;
@@ -245,15 +247,32 @@ select#goto {
 </div>
 
 <aside id="wallpanel" class="ui panel" hidden aria-live="polite">
+  <div class="seg wp-modes" role="group" aria-label="Que casser">
+    <button data-wm="tout" aria-pressed="true">Tout le mur</button>
+    <button data-wm="portion" aria-pressed="false">Une portion</button>
+    <button data-wm="trou" aria-pressed="false">Un trou</button>
+  </div>
   <div id="wp-sel">
     <span class="lvl" id="wp-lvl">Aucune cloison sélectionnée</span>
     <strong id="wp-name">Cliquez une cloison intérieure</strong>
-    <span class="meta" id="wp-meta">Les murs extérieurs ne se cassent pas.</span>
+    <span class="meta" id="wp-meta"></span>
+  </div>
+  <div id="wp-edit" class="opgrid" hidden>
+    <label for="wp-w">Largeur</label>
+    <div class="num"><button class="tool" data-wk="w" data-d="-5" aria-label="Réduire la largeur">−</button><input id="wp-w" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-wk="w" data-d="5" aria-label="Augmenter la largeur">+</button></div>
+    <label for="wp-h" id="wp-h-lbl">Hauteur</label>
+    <div class="num" id="wp-h-row"><button class="tool" data-wk="h" data-d="-5" aria-label="Réduire la hauteur">−</button><input id="wp-h" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-wk="h" data-d="5" aria-label="Augmenter la hauteur">+</button></div>
+    <label for="wp-zb" id="wp-zb-lbl">Depuis le sol</label>
+    <div class="num" id="wp-zb-row"><button class="tool" data-wk="zb" data-d="-5" aria-label="Descendre">−</button><input id="wp-zb" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-wk="zb" data-d="5" aria-label="Monter">+</button></div>
+    <label for="wp-u">Position</label>
+    <div class="num"><button class="tool" data-wk="u" data-d="-5" aria-label="Décaler d’un côté">−</button><input id="wp-u" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-wk="u" data-d="5" aria-label="Décaler de l’autre côté">+</button></div>
   </div>
   <div class="row">
     <button id="wp-break" class="tool danger" disabled>Abattre ce mur</button>
+    <button id="wp-fill" class="tool" hidden>Reboucher</button>
     <button id="wp-desel" class="tool" disabled>Désélectionner</button>
   </div>
+  <p id="wp-msg" class="opmsg" hidden></p>
   <div class="row sep">
     <span id="wp-count">Plan d’origine</span>
     <button id="wp-undo" class="tool" disabled>Annuler</button>
@@ -727,7 +746,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!drag || drag.id !== e.pointerId) return;
   const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
   if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
-  if (moved < 6 && wallMode) pickWall(e.clientX, e.clientY);
+  if (moved < 6 && wallMode && wmMode === 'tout') pickWall(e.clientX, e.clientY);
   if (moved < 6 && furnMode && !furnDrag) pickFurn(e.clientX, e.clientY);
   if (moved < 6 && ouvMode && !ouvDrag) pickOuv(e.clientX, e.clientY);
   drag = null;
@@ -835,7 +854,14 @@ const wp = {
   panel: document.getElementById('wallpanel'), lvl: document.getElementById('wp-lvl'), name: document.getElementById('wp-name'),
   meta: document.getElementById('wp-meta'), brk: document.getElementById('wp-break'), desel: document.getElementById('wp-desel'),
   count: document.getElementById('wp-count'), undo: document.getElementById('wp-undo'), reset: document.getElementById('wp-reset'),
+  modes: [...document.querySelectorAll('[data-wm]')], edit: document.getElementById('wp-edit'), fill: document.getElementById('wp-fill'),
+  msg: document.getElementById('wp-msg'), w: document.getElementById('wp-w'), h: document.getElementById('wp-h'),
+  zb: document.getElementById('wp-zb'), u: document.getElementById('wp-u'),
 };
+let wmMode = 'tout';             // 'tout' : abattre une cloison entiere ; 'portion' : toute la hauteur ; 'trou'
+let wpSel = null;                // partie cassee selectionnee : { w (mur genere), o (son ouverture) }
+const casseHist = [];            // gestes de l'outil : { kind: 'full', key } | { kind: 'ops', entry } | { kind: 'reset', entry, keys }
+const ROUGH = (t) => t === 'breche' || t === 'trou';
 const btnWall = document.getElementById('wallmode');
 function setGlow(w, on) {
   // les murs generes partagent leurs matieres : on surligne avec un volume translucide plutot qu'en teintant
@@ -850,20 +876,50 @@ function select(w) {
   if (w) setGlow(w, true);
   renderPanel();
 }
-function renderPanel() {
-  if (selWall) {
-    wp.lvl.textContent = `Cloison · ${LEVEL_LABEL[selWall.level]}`;
-    wp.name.textContent = selWall.name;
-    wp.meta.textContent = `${selWall.len.toFixed(2).replace('.', ',')} m de long, environ 7 cm d’épaisseur`;
+function renderPanel(msg = '') {
+  wp.msg.textContent = msg; wp.msg.hidden = !msg;
+  for (const b of wp.modes) b.setAttribute('aria-pressed', String(b.dataset.wm === wmMode));
+  wp.edit.hidden = true; wp.fill.hidden = true; wp.brk.hidden = wmMode !== 'tout';
+  if (wmMode === 'tout') {
+    if (selWall) {
+      wp.lvl.textContent = `Cloison · ${LEVEL_LABEL[selWall.level]}`;
+      wp.name.textContent = selWall.name;
+      wp.meta.textContent = `${selWall.len.toFixed(2).replace('.', ',')} m de long, environ 7 cm d’épaisseur`;
+    } else {
+      wp.lvl.textContent = 'Aucune cloison sélectionnée';
+      wp.name.textContent = 'Cliquez une cloison intérieure';
+      wp.meta.textContent = 'Pour un mur extérieur, ou pour ne casser qu’une partie, choisissez Une portion ou Un trou.';
+    }
+  } else if (wpSel) {
+    const d = wpSel.w.def, o = wpSel.o;
+    wp.lvl.textContent = `${d.kind === 'ext' ? 'Mur extérieur' : 'Cloison'} · ${LEVEL_LABEL[d.level]}`;
+    wp.name.textContent = `${o.type === 'trou' ? 'Trou' : 'Portion abattue'} · ${wallLabel(d)}`;
+    wp.meta.textContent = 'Glissez-la le long du mur pour la déplacer, ou réglez les cotes.';
+    wp.edit.hidden = false; wp.fill.hidden = false;
+    const tr = o.type === 'trou';
+    for (const id of ['wp-h-lbl', 'wp-h-row', 'wp-zb-lbl', 'wp-zb-row']) document.getElementById(id).hidden = !tr;
+    wp.w.value = cm(o.w); wp.h.value = cm(o.zt - o.zb); wp.zb.value = cm(o.zb - d.floor); wp.u.value = cm(o.u - o.w / 2 - d.lim[0]);
   } else {
-    wp.lvl.textContent = 'Aucune cloison sélectionnée';
-    wp.name.textContent = 'Cliquez une cloison intérieure';
-    wp.meta.textContent = 'Les murs extérieurs ne se cassent pas.';
+    wp.lvl.textContent = wmMode === 'trou' ? 'Faire un trou' : 'Casser une portion de mur';
+    wp.name.textContent = 'Tracez sur un mur la partie à casser';
+    wp.meta.textContent = wmMode === 'trou'
+      ? 'Cliquez-glissez sur un mur pour dessiner le trou, ou cliquez simplement pour un trou de 80 × 80 cm.'
+      : 'Cliquez-glissez le long d’un mur pour choisir la largeur (sur toute la hauteur), ou cliquez simplement pour 1 m.';
   }
-  wp.brk.disabled = !selWall; wp.desel.disabled = !selWall;
-  const n = removedOrder.length;
-  wp.count.textContent = n ? `${n} mur${n > 1 ? 's' : ''} abattu${n > 1 ? 's' : ''}` : 'Plan d’origine';
-  wp.undo.disabled = !n; wp.reset.disabled = !n;
+  wp.brk.disabled = !selWall; wp.desel.disabled = wmMode === 'tout' ? !selWall : !wpSel;
+  const n = removedOrder.length + roughCount();
+  wp.count.textContent = n ? `${n} démolition${n > 1 ? 's' : ''}` : 'Plan d’origine';
+  wp.undo.disabled = !casseHist.length && !removedOrder.length; wp.reset.disabled = !n;
+  refreshCasseOverlay();
+}
+function roughCount() { let n = 0; for (const w of Object.values(PW)) n += w.ops.filter((o) => ROUGH(o.type)).length; return n; }
+function refreshCasseOverlay() {
+  if (!wallMode || wmMode === 'tout') { if (!ouvMode) ovOpen.visible = false; return; }
+  ovWall.visible = false;
+  if (!wpSel) { ovOpen.visible = false; return; }
+  const d = wpSel.w.def, o = wpSel.o;
+  ovTint(0xd2452f, 0.12);
+  placeBox(ovOpen, d, o.u - o.w / 2, o.u + o.w / 2, d.tA - 0.06, d.tB + 0.06, o.zb, o.zt);
 }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(removedOrder)); } catch (e) { /* stockage indisponible */ } }
 function setRemoved(w, rem) {
@@ -897,17 +953,67 @@ function toggleWallMode(on) {
   wallMode = on;
   btnWall.setAttribute('aria-pressed', String(on));
   wp.panel.hidden = !on;
-  if (!on) select(null);
+  if (!on) { select(null); wpSel = null; casseDrag = null; }
   if (on && measuring) btnMeasure.click();
   if (on && furnMode) toggleFurnMode(false);
   if (on && ouvMode) toggleOuvMode(false);
   renderPanel(); setHelp();
 }
 btnWall.addEventListener('click', () => toggleWallMode(!wallMode));
-wp.brk.addEventListener('click', () => { if (!selWall) return; const w = selWall; select(null); setRemoved(w, true); save(); renderPanel(); });
-wp.desel.addEventListener('click', () => select(null));
-wp.undo.addEventListener('click', () => { const k = removedOrder[removedOrder.length - 1]; if (k) { setRemoved(walls[k], false); save(); renderPanel(); } });
-wp.reset.addEventListener('click', () => { for (const k of [...removedOrder]) setRemoved(walls[k], false); save(); renderPanel(); });
+wp.brk.addEventListener('click', () => {
+  if (!selWall) return; const w = selWall; select(null); setRemoved(w, true); save();
+  casseHist.push({ kind: 'full', key: w.key }); renderPanel();
+});
+wp.desel.addEventListener('click', () => { select(null); wpSel = null; renderPanel(); });
+for (const b of wp.modes) b.addEventListener('click', () => { wmMode = b.dataset.wm; select(null); wpSel = null; renderPanel(); setHelp(); });
+wp.undo.addEventListener('click', () => {
+  const h = casseHist.pop();
+  if (!h) { const k = removedOrder[removedOrder.length - 1]; if (k) { setRemoved(walls[k], false); save(); } }
+  else if (h.kind === 'full') { setRemoved(walls[h.key], false); save(); }
+  else {
+    const at = ouvHist.indexOf(h.entry); if (at >= 0) ouvHist.splice(at, 1);
+    restoreEntry(h.entry);
+    if (h.kind === 'reset') { for (const k of h.keys) setRemoved(walls[k], true); save(); }
+  }
+  wpSel = null; renderPanel();
+});
+wp.reset.addEventListener('click', () => {
+  const ids = Object.keys(PW).filter((id) => PW[id].ops.some((o) => ROUGH(o.type)));
+  const entry = ids.length ? snapshot(...ids) : [];
+  for (const id of ids) { PW[id].ops = PW[id].orig.map((o) => ({ ...o })); rebuildWall(id); }
+  saveOuv();
+  const keys = [...removedOrder];
+  for (const k of keys) setRemoved(walls[k], false);
+  save();
+  casseHist.push({ kind: 'reset', entry, keys });
+  wpSel = null; renderPanel('Tout est revenu au plan d’origine.');
+});
+wp.fill.addEventListener('click', () => {
+  if (!wpSel) return;
+  const w = wpSel.w, i = w.ops.indexOf(wpSel.o); if (i < 0) return;
+  const entry = snapshot(w.def.id);
+  w.ops.splice(i, 1); rebuildWall(w.def.id); saveOuv();
+  casseHist.push({ kind: 'ops', entry });
+  wpSel = null; renderPanel('Mur rebouché.');
+});
+function editRough(mut) {
+  if (!wpSel) return;
+  const w = wpSel.w, i = w.ops.indexOf(wpSel.o); if (i < 0) return;
+  const r = editOp(w, i, mut, 'casse');
+  wpSel.o = w.ops[r.ok ? r.idx : i];
+  renderPanel(r.notes.join(' '));
+}
+const wpNum = (el, f) => el.addEventListener('change', () => { const v = parseFloat(el.value); if (Number.isFinite(v)) editRough((o) => f(o, v / 100)); else renderPanel(); });
+wpNum(wp.w, (o, v) => { o.w = v; });
+wpNum(wp.h, (o, v) => { o.zt = o.zb + v; });
+wpNum(wp.zb, (o, v) => { const h = o.zt - o.zb; o.zb = wpSel.w.def.floor + v; o.zt = o.zb + h; });
+wpNum(wp.u, (o, v) => { o.u = wpSel.w.def.lim[0] + v + o.w / 2; });
+for (const b of document.querySelectorAll('#wp-edit [data-wk]')) {
+  b.addEventListener('click', () => {
+    const k = b.dataset.wk, dv = parseFloat(b.dataset.d) / 100;
+    editRough((o) => { if (k === 'w') o.w += dv; else if (k === 'h') o.zt += dv; else if (k === 'zb') { o.zb += dv; o.zt += dv; } else o.u += dv; });
+  });
+}
 
 // ---------------------------------------------------------------- outil "elements" : meubles, equipements, portes, fenetres
 const furn = {};
@@ -1134,15 +1240,15 @@ let WDATA = null;
 const MATS = {}, TILES = {};
 const PW = {};                 // murs generes, par id : { def, ops, orig, group, col, level }
 const OSTORE = 'maison-ouvertures';
-const TYPES_EXT = [['fenetre', 'Fenêtre'], ['petite', 'Petite fenêtre'], ['porte_fenetre', 'Porte-fenêtre'], ['porte', 'Porte'], ['baie', 'Baie libre (sans menuiserie)']];
-const TYPES_INT = [['porte_int', 'Porte'], ['baie', 'Passage libre']];
+const TYPES_EXT = [['fenetre', 'Fenêtre'], ['petite', 'Petite fenêtre'], ['porte_fenetre', 'Porte-fenêtre'], ['porte', 'Porte'], ['baie', 'Baie libre (sans menuiserie)'], ['trou', 'Trou (mur cassé)'], ['breche', 'Portion abattue']];
+const TYPES_INT = [['porte_int', 'Porte'], ['baie', 'Passage libre'], ['trou', 'Trou (mur cassé)'], ['breche', 'Portion abattue']];
 const TYPES_ROOF = [['velux', 'Fenêtre de toit']];
 const TYPE_LABEL = Object.fromEntries([...TYPES_EXT, ...TYPES_INT, ...TYPES_ROOF]);
 const typesOf = (d) => (d.kind === 'ext' ? TYPES_EXT : d.kind === 'roof' ? TYPES_ROOF : TYPES_INT);
 const DEF = {   // dimensions par defaut quand on ajoute ou change de type (zb/zt relatifs au sol)
   fenetre: { w: 0.95, zb: 0.85, zt: 2.30 }, petite: { w: 0.40, zb: 1.65, zt: 2.25 }, porte_fenetre: { w: 1.20, zb: 0.0, zt: 2.25 },
   porte: { w: 0.95, zb: 0.0, zt: 2.20 }, baie: { w: 1.20, zb: 0.0, zt: 2.10 }, porte_int: { w: 0.80, zb: 0.0, zt: 2.04 },
-  velux: { w: 0.78, zb: 0.0, zt: 1.18 },        // toit : zb/zt = distances le long de la pente depuis l'egout
+  velux: { w: 0.78, zb: 0.0, zt: 1.18 }, trou: { w: 0.80, zb: 1.0, zt: 1.80 }, breche: { w: 1.0, zb: 0.0, zt: 2.40 },        // toit : zb/zt = distances le long de la pente depuis l'egout
 };
 const GAP = 0.15;              // ecart minimal entre deux ouvertures (trumeau)
 const isDoor = (t) => t === 'porte' || t === 'porte_int' || t === 'baie' || t === 'porte_fenetre';
@@ -1224,6 +1330,12 @@ function buildWallBody(B, d, ops) {
     return !ops.some((o) => uc > o.u - o.w / 2 && uc < o.u + o.w / 2 && zc > o.zb && zc < o.zt);
   };
   const outerMat = d.kind === 'ext' ? (d.faceA.outer ? d.faceA.base : d.faceB.base) : 'Platre';
+  const roughMat = d.kind === 'ext' ? 'Moellons' : 'Brique';      // mur casse : on voit la maconnerie
+  const rev = (i, j) => {
+    const uc = (us[i] + us[i + 1]) / 2, zc = (zs[j] + zs[j + 1]) / 2;
+    const o = ops.find((q) => uc > q.u - q.w / 2 && uc < q.u + q.w / 2 && zc > q.zb && zc < q.zt);
+    return o && ROUGH(o.type) ? roughMat : 'Platre';
+  };
   const T = d.tB - d.tA;
   const nT = (s) => (d.axis === 'x' ? [0, s, 0] : [s, 0, 0]);
   const nU = (s) => (d.axis === 'x' ? [s, 0, 0] : [0, s, 0]);
@@ -1237,17 +1349,17 @@ function buildWallBody(B, d, ops) {
       B.quad(bandMat(d.faceA, uc, zc), toPlan(d, u0, d.tA, z0), du, dz, nT(-1));
       B.quad(bandMat(d.faceB, uc, zc), toPlan(d, u0, d.tB, z0), du, dz, nT(1));
       const L = solid(i - 1, j), R = solid(i + 1, j), Dn = solid(i, j - 1), Up = solid(i, j + 1);
-      if (!L) B.quad(L === null ? outerMat : 'Platre', toPlan(d, u0, d.tA, z0), vT(T), dz, nU(-1));
-      if (!R) B.quad(R === null ? outerMat : 'Platre', toPlan(d, u1, d.tA, z0), vT(T), dz, nU(1));
-      if (!Dn) B.quad(Dn === null ? outerMat : 'Platre', toPlan(d, u0, d.tA, z0), du, vT(T), [0, 0, -1]);
-      if (!Up) B.quad(Up === null ? outerMat : 'Platre', toPlan(d, u0, d.tA, z1), du, vT(T), [0, 0, 1]);
+      if (!L) B.quad(L === null ? outerMat : rev(i - 1, j), toPlan(d, u0, d.tA, z0), vT(T), dz, nU(-1));
+      if (!R) B.quad(R === null ? outerMat : rev(i + 1, j), toPlan(d, u1, d.tA, z0), vT(T), dz, nU(1));
+      if (!Dn) B.quad(Dn === null ? outerMat : rev(i, j - 1), toPlan(d, u0, d.tA, z0), du, vT(T), [0, 0, -1]);
+      if (!Up) B.quad(Up === null ? outerMat : rev(i, j + 1), toPlan(d, u0, d.tA, z1), du, vT(T), [0, 0, 1]);
     }
   }
 }
 
 function buildJoinery(B, d, o) {
   const s = o.u - o.w / 2, e = o.u + o.w / 2, zb = o.zb, zt = o.zt;
-  if (o.type === 'baie') return;
+  if (o.type === 'baie' || ROUGH(o.type)) return;
   if (d.kind === 'int') {                       // porte interieure : chambranles + vantail ouvert a 90 deg
     const jw = 0.07, pr = 0.015, top = Math.min(zt + jw, d.z1);
     for (const [f, sg] of [[d.tA, -1], [d.tB, 1]]) {
@@ -1481,7 +1593,7 @@ function fitRoof(w, o, idx) {
     return { ok: false, notes: ['La souche de cheminée est à cet endroit.'] };
   if (w.ops.some((q, i) => i !== idx && hit(q, GAP))) return { ok: false, notes: ['Trop près d’une autre fenêtre de toit.'] };
   if (Math.abs(o.w - w0) > 1e-6 || Math.abs(h - h0) > 1e-6) notes.push('Taille limitée (de 40 × 50 cm à 180 × 200 cm).');
-  return { ok: true, notes };
+  return { ok: true, notes, idx: w.ops.indexOf(o) };
 }
 function placeRoofBox(m, d, u0, u1, v0, v1, t0, t1) {
   const c = roofPt(d, (u0 + u1) / 2, (v0 + v1) / 2, (t0 + t1) / 2);
@@ -1534,6 +1646,7 @@ const wallLabel = (d) => (d.kind !== 'int' ? `${d.name}` : `Cloison ${WALL_NAMES
 // garde l'ouverture dans le mur, sans chevaucher les autres ; renvoie un message si on a du corriger
 function fitOpening(w, o, idx) {
   if (w.def.kind === 'roof') return fitRoof(w, o, idx);
+  if (ROUGH(o.type)) return fitRough(w, o);
   const d = w.def, notes = [];
   const span = d.lim[1] - d.lim[0];
   const w0 = o.w;
@@ -1555,9 +1668,62 @@ function fitOpening(w, o, idx) {
   const clash = others.some((q) => Math.abs(o.u - q.u) < q.w / 2 + o.w / 2 + GAP - 1e-6);
   if (clash) notes.push('Pas assez de place à cet endroit : réduisez la largeur ou déplacez une autre ouverture.');
   if (Math.abs(o.w - w0) > 1e-6) notes.push('Largeur limitée à la longueur du mur.');
-  return { ok: !clash, notes };
+  return { ok: !clash, notes, idx: w.ops.indexOf(o) };
 }
-function snapshot(...ids) { ouvHist.push(ids.map((id) => ({ id, ops: PW[id].ops.map((o) => ({ ...o })) }))); if (ouvHist.length > 200) ouvHist.shift(); }
+function snapshot(...ids) {
+  const g = ids.map((id) => ({ id, ops: PW[id].ops.map((o) => ({ ...o })) }));
+  ouvHist.push(g); if (ouvHist.length > 200) ouvHist.shift();
+  return g;
+}
+function restoreEntry(g) {
+  for (const h of g) { PW[h.id].ops = h.ops.map((o) => ({ ...o })); if (selW === PW[h.id]) selI = -1; rebuildWall(h.id); }
+  saveOuv();
+}
+// modifie l'ouverture i du mur w ; annulable ; renvoie l'index apres ajustement (une demolition peut en englober d'autres)
+function editOp(w, i, mut, src) {
+  const entry = snapshot(w.def.id);
+  const o = w.ops[i];
+  mut(o);
+  const r = fitOpening(w, o, i);
+  if (!r.ok) { w.ops = entry[0].ops.map((q) => ({ ...q })); ouvHist.pop(); return { ok: false, notes: r.notes, idx: i }; }
+  if (src === 'casse') casseHist.push({ kind: 'ops', entry });
+  rebuildWall(w.def.id); saveOuv();
+  return { ok: true, notes: r.notes, idx: w.ops.indexOf(o) };
+}
+// demolition : hauteur (toute la hauteur pour une portion), et englobe portes, fenetres ou trous qu'elle touche
+const roughRange = (d) => (d.kind === 'int' ? [d.z0, d.z1] : [d.floor, d.z1 - 0.21]);
+function fitRough(w, o) {
+  const d = w.def, notes = [], [lo, hi] = roughRange(d), span = d.lim[1] - d.lim[0];
+  const clampAll = () => {
+    o.w = Math.min(Math.max(o.w, 0.20), span);
+    if (o.type === 'breche') { o.zb = lo; o.zt = hi; } else {
+      const h = Math.min(Math.max(o.zt - o.zb, 0.20), hi - lo);
+      o.zb = Math.min(Math.max(o.zb, lo), hi - h); o.zt = o.zb + h;
+    }
+    o.u = Math.min(Math.max(o.u, d.lim[0] + o.w / 2), d.lim[1] - o.w / 2);
+  };
+  clampAll();
+  const eaten = [];
+  for (let pass = 0; pass < 6; pass++) {
+    let grew = false;
+    for (const q of w.ops) {
+      if (q === o || eaten.includes(q)) continue;
+      if (!(Math.abs(o.u - q.u) < q.w / 2 + o.w / 2 + GAP && o.zb < q.zt + GAP && o.zt > q.zb - GAP)) continue;
+      eaten.push(q); grew = true;
+      const a = Math.min(o.u - o.w / 2, q.u - q.w / 2), b = Math.max(o.u + o.w / 2, q.u + q.w / 2);
+      o.u = (a + b) / 2; o.w = b - a;
+      if (o.type === 'trou') { o.zb = Math.max(lo, Math.min(o.zb, q.zb)); o.zt = Math.min(hi, Math.max(o.zt, q.zt)); }
+    }
+    if (!grew) break;
+  }
+  if (eaten.length) {
+    clampAll();
+    w.ops = w.ops.filter((q) => !eaten.includes(q));
+    notes.push(eaten.length > 1 ? `${eaten.length} ouvertures sont englobées dans la démolition.`
+      : `${TYPE_LABEL[eaten[0].type] || 'Ouverture'} englobée dans la démolition.`);
+  }
+  return { ok: true, notes, idx: w.ops.indexOf(o) };
+}
 function saveOuv() {
   const out = {};
   for (const [id, w] of Object.entries(PW)) if (JSON.stringify(w.ops) !== JSON.stringify(w.orig)) out[id] = w.ops;
@@ -1570,6 +1736,11 @@ const ovWallMat = new THREE.MeshBasicMaterial({ color: 0xe0a020, transparent: tr
 const ovOpen = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ovMat), ovWall = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ovWallMat);
 ovOpen.renderOrder = 20; ovWall.renderOrder = 19; ovOpen.visible = ovWall.visible = false;
 scene.add(ovOpen, ovWall);
+// contour net de la selection (le volume translucide seul devient envahissant quand on est tout pres)
+const ovEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b6cd1, depthTest: false, transparent: true });
+const ovEdges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), ovEdgeMat);
+ovEdges.renderOrder = 21; ovOpen.add(ovEdges);
+const ovTint = (hex, op) => { ovMat.color.setHex(hex); ovEdgeMat.color.setHex(hex); ovMat.opacity = op; };
 function placeBox(m, d, u0, u1, t0, t1, z0, z1) {
   m.quaternion.identity();
   if (d.kind === 'roof') { placeRoofBox(m, d, u0, u1, z0, z1, t0, t1); return; }
@@ -1581,6 +1752,7 @@ function placeBox(m, d, u0, u1, t0, t1, z0, z1) {
 }
 function refreshOverlay() {
   if (wallMode) return;
+  ovTint(0x2b6cd1, 0.28);
   ovOpen.visible = ovWall.visible = false;
   if (!ouvMode || !selW) return;
   const d = selW.def;
@@ -1608,7 +1780,7 @@ function renderOuvPanel(msg = '') {
       op.type.value = o.type;
       op.w.value = cm(o.w); op.h.value = cm(o.zt - o.zb); op.zb.value = cm(o.zb - d.floor);
       op.u.value = cm(o.u - o.w / 2 - d.lim[0]);
-      op.zbRow.hidden = isDoor(o.type); document.getElementById('op-zb-lbl').hidden = isDoor(o.type);
+      op.zbRow.hidden = isDoor(o.type) || o.type === 'breche'; document.getElementById('op-zb-lbl').hidden = op.zbRow.hidden;
     } else {
       op.name.textContent = wallLabel(d);
       op.meta.textContent = d.kind === 'roof'
@@ -1648,14 +1820,8 @@ function pickOuv(cx, cy) {
 }
 function applyEdit(mutator) {
   if (!selW || selI < 0) return;
-  snapshot(selW.def.id);
-  const o = selW.ops[selI];
-  const before = { ...o };
-  mutator(o);
-  const r = fitOpening(selW, o, selI);
-  if (!r.ok) { Object.assign(o, before); ouvHist.pop(); renderOuvPanel(r.notes.join(' ')); return; }
-  rebuildWall(selW.def.id);
-  saveOuv();
+  const r = editOp(selW, selI, mutator, 'ouv');
+  if (r.ok) selI = r.idx;
   renderOuvPanel(r.notes.join(' '));
 }
 op.type.addEventListener('change', () => applyEdit((o) => {
@@ -1695,13 +1861,13 @@ op.add.addEventListener('click', () => {
   const idx = selW.ops.length - 1;
   const r = fitOpening(selW, o, idx);
   if (!r.ok) { selW.ops.pop(); ouvHist.pop(); renderOuvPanel(r.notes.join(' ')); return; }
-  selI = idx;
+  selI = r.idx;
   rebuildWall(d.id); saveOuv(); renderOuvPanel(r.notes.join(' '));
 });
 op.undo.addEventListener('click', () => {
   const g = ouvHist.pop(); if (!g) return;
-  for (const h of g) { PW[h.id].ops = h.ops; if (selW === PW[h.id]) selI = -1; rebuildWall(h.id); }
-  saveOuv(); renderOuvPanel();
+  const k = casseHist.findIndex((c) => c.entry === g); if (k >= 0) casseHist.splice(k, 1);
+  restoreEntry(g); renderOuvPanel();
 });
 op.reset.addEventListener('click', () => {
   const ids = Object.keys(PW).filter((id) => JSON.stringify(PW[id].ops) !== JSON.stringify(PW[id].orig));
@@ -1737,6 +1903,7 @@ canvas.addEventListener('pointermove', (e) => {
   } else o.u = (d.axis === 'x' ? ouvHit.x : -ouvHit.z) + ouvDrag.du;
   const r = fitOpening(selW, o, selI);
   if (!r.ok) Object.assign(o, before);
+  selI = selW.ops.indexOf(o);
   ouvDrag.moved = true;
   rebuildWall(d.id, false);
   refreshOverlay();
@@ -1750,6 +1917,100 @@ const endOuvDrag = (e) => {
 };
 canvas.addEventListener('pointerup', endOuvDrag);
 canvas.addEventListener('pointercancel', endOuvDrag);
+
+// ---------------------------------------------------------------- outil casser : tracer une portion ou un trou, la deplacer
+let casseDrag = null;
+// partie cassee sous le curseur : on vise le plan du mur (le trou lui-meme est vide)
+function pickRough(cx, cy) {
+  rayAt(cx, cy);
+  let best = null;
+  for (const w of Object.values(PW)) {
+    if (!w.group.visible || w.def.kind === 'roof') continue;
+    const d = w.def, rough = w.ops.filter((o) => ROUGH(o.type));
+    if (!rough.length) continue;
+    const tm = (d.tA + d.tB) / 2;
+    const pl = new THREE.Plane().setFromNormalAndCoplanarPoint(d.axis === 'x' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(1, 0, 0),
+      d.axis === 'x' ? new THREE.Vector3(0, 0, -tm) : new THREE.Vector3(tm, 0, 0));
+    const p = new THREE.Vector3();
+    if (!ray.ray.intersectPlane(pl, p)) continue;
+    const u = d.axis === 'x' ? p.x : -p.z, z = p.y, dist = p.distanceTo(ray.ray.origin);
+    const o = rough.find((q) => u > q.u - q.w / 2 - 0.05 && u < q.u + q.w / 2 + 0.05 && z > q.zb - 0.05 && z < q.zt + 0.05);
+    if (o && (!best || dist < best.dist)) best = { w, o, u, z, point: p, dist };
+  }
+  const wh = wallHit(cx, cy);
+  if (best && wh && wh.point.distanceTo(ray.ray.origin) < best.dist - 0.3) return null;   // un autre mur est devant
+  return best;
+}
+function draftRough(c) {
+  const d = c.w.def, [lo, hi] = roughRange(d), tr = wmMode === 'trou';
+  if (!c.moved) return tr ? { type: 'trou', u: c.u0, w: 0.80, zb: c.z0 - 0.40, zt: c.z0 + 0.40 } : { type: 'breche', u: c.u0, w: 1.0, zb: lo, zt: hi };
+  const a = Math.min(c.u0, c.u1), b = Math.max(c.u0, c.u1);
+  return tr ? { type: 'trou', u: (a + b) / 2, w: b - a, zb: Math.min(c.z0, c.z1), zt: Math.max(c.z0, c.z1) } : { type: 'breche', u: (a + b) / 2, w: b - a, zb: lo, zt: hi };
+}
+canvas.addEventListener('pointerdown', (e) => {
+  if (!wallMode || wmMode === 'tout' || e.button > 0) return;
+  const r = pickRough(e.clientX, e.clientY);
+  const hit = r || wallHit(e.clientX, e.clientY);
+  if (!hit || hit.w.def.kind === 'roof') return;
+  e.stopImmediatePropagation();
+  canvas.setPointerCapture(e.pointerId);
+  const d = hit.w.def;
+  ouvPlane.setFromNormalAndCoplanarPoint(d.axis === 'x' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(1, 0, 0), hit.point);
+  if (r) {
+    wpSel = { w: r.w, o: r.o };
+    casseDrag = { id: e.pointerId, kind: 'move', w: r.w, du: r.o.u - r.u, dz: r.o.zb - r.z, x0: e.clientX, y0: e.clientY, entry: null };
+    renderPanel();
+  } else {
+    wpSel = null;
+    casseDrag = { id: e.pointerId, kind: 'draw', w: hit.w, u0: hit.u, z0: hit.z, u1: hit.u, z1: hit.z, x0: e.clientX, y0: e.clientY, moved: false };
+    renderPanel();
+  }
+}, { capture: true });
+canvas.addEventListener('pointermove', (e) => {
+  if (!casseDrag || casseDrag.id !== e.pointerId) return;
+  rayAt(e.clientX, e.clientY);
+  if (!ray.ray.intersectPlane(ouvPlane, ouvHit)) return;
+  const c = casseDrag, d = c.w.def;
+  const u = d.axis === 'x' ? ouvHit.x : -ouvHit.z, z = ouvHit.y;
+  if (Math.hypot(e.clientX - c.x0, e.clientY - c.y0) > 6) c.moved = true;
+  if (!c.moved) return;
+  if (c.kind === 'draw') {
+    c.u1 = u; c.z1 = z;
+    const o = draftRough(c);
+    ovTint(0xd2452f, 0.12);
+    placeBox(ovOpen, d, o.u - o.w / 2, o.u + o.w / 2, d.tA - 0.06, d.tB + 0.06, Math.max(o.zb, d.z0), Math.min(o.zt, d.z1));
+    return;
+  }
+  if (!c.entry) c.entry = snapshot(d.id);
+  const o = wpSel.o, before = { ...o }, h = o.zt - o.zb;
+  o.u = u + c.du;
+  if (o.type === 'trou') { o.zb = z + c.dz; o.zt = o.zb + h; }
+  const r = fitOpening(c.w, o, c.w.ops.indexOf(o));
+  if (!r.ok) Object.assign(o, before);
+  rebuildWall(d.id, false);
+  refreshCasseOverlay();
+});
+const endCasse = (e) => {
+  if (!casseDrag || casseDrag.id !== e.pointerId) return;
+  const c = casseDrag; casseDrag = null;
+  const w = c.w;
+  if (c.kind === 'move') {
+    if (c.entry) { casseHist.push({ kind: 'ops', entry: c.entry }); rebuildWall(w.def.id); saveOuv(); }
+    renderPanel(); return;
+  }
+  if (e.type === 'pointercancel') { renderPanel(); return; }
+  const o = draftRough(c);
+  const entry = snapshot(w.def.id);
+  w.ops.push(o);
+  const r = fitOpening(w, o, w.ops.length - 1);
+  casseHist.push({ kind: 'ops', entry });
+  rebuildWall(w.def.id); saveOuv();
+  wpSel = { w, o };
+  renderPanel(r.notes.join(' '));
+};
+canvas.addEventListener('pointerup', endCasse);
+canvas.addEventListener('pointercancel', endCasse);
+
 function toggleOuvMode(on) {
   ouvMode = on;
   btnOuv.setAttribute('aria-pressed', String(on));
@@ -1812,7 +2073,8 @@ function setHelp() {
   const h = document.getElementById('help');
   if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
   if (furnMode) { h.innerHTML = 'Cliquez un meuble ou un équipement : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Vue du dessus</b> aide à les placer. Portes et fenêtres se règlent avec <b>Ouvertures</b>.'; return; }
-  if (wallMode) { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
+  if (wallMode && wmMode === 'tout') { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. <b>Une portion</b> ou <b>Un trou</b> pour ne casser qu’une partie. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
+  if (wallMode) { h.innerHTML = 'Cliquez-glissez sur un mur (cloison ou mur extérieur) pour tracer la partie à casser. Une partie déjà cassée se déplace en la faisant glisser. Les portes et fenêtres touchées sont englobées.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
   if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
   else h.innerHTML = isTouch ? 'Joystick pour marcher, glissez ailleurs pour regarder.'
@@ -1883,7 +2145,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { PW, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
+window.__maison = { PW, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
