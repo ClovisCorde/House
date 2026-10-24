@@ -132,9 +132,34 @@ select#goto {
 .opmsg { margin: 0; font-size: 12.5px; color: var(--measure); }
 #wallpanel .wp-modes { padding: 0; }
 #wallpanel .wp-modes button { flex: 1; padding: 9px 8px; border: 1px solid var(--line); }
+#finpanel {
+  top: calc(env(safe-area-inset-top, 0px) + 126px); left: max(16px, env(safe-area-inset-left, 0px));
+  padding: 12px 14px; display: grid; gap: 10px; width: min(340px, calc(100% - 32px));
+  max-height: calc(100% - 230px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto;
+}
+#finpanel .lvl, #finpanel .lbl2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: block; }
+#finpanel strong { font-family: var(--font-display); font-size: 17px; line-height: 1.2; display: block; }
+#finpanel .meta { color: var(--muted); font-size: 12.5px; display: block; margin-top: 2px; }
+#finpanel .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#finpanel .sep { border-top: 1px solid var(--line); padding-top: 10px; }
+#finpanel .tool { border-color: var(--line); padding: 8px 11px; }
+#finpanel .tool:disabled { opacity: 0.45; cursor: default; }
+#fn-edit { display: grid; gap: 8px; }
+#fn-edit[hidden] { display: none; }
+#finpanel .fn-scope { padding: 0; }
+#finpanel .fn-scope button { flex: 1; border: 1px solid var(--line); }
+.sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.sw button { display: grid; gap: 3px; justify-items: center; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-solid);
+  color: var(--fg); font: 500 10.5px/1.15 var(--font-body); cursor: pointer; text-align: center; min-width: 0; }
+.sw button:hover { border-color: var(--accent); }
+.sw button[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sw i, .sw canvas { display: block; width: 100%; height: 30px; border-radius: 5px; border: 1px solid rgba(0, 0, 0, 0.12); }
+.sw label { display: grid; gap: 3px; justify-items: center; padding: 3px; border: 1px dashed var(--line); border-radius: 8px; font: 500 10.5px/1.15 var(--font-body); color: var(--fg); cursor: pointer; }
+.sw input[type=color] { width: 100%; height: 30px; border: 0; padding: 0; background: none; cursor: pointer; }
+#fn-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
 #op-count, #fp-count, #wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
 @media (max-width: 640px) {
-  #ouvpanel, #furnpanel, #wallpanel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); left: 10px; right: 10px; width: auto;
+  #ouvpanel, #furnpanel, #wallpanel, #projpanel, #finpanel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); left: 10px; right: 10px; width: auto;
     max-height: 52vh; overflow-y: auto; z-index: 6; }
 }
 #help {
@@ -163,6 +188,41 @@ select#goto {
 #btn-gal { font: 600 13px/1 var(--font-body); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
   border-radius: var(--r); padding: 13px 15px; cursor: pointer; box-shadow: var(--shadow); }
 #btn-gal:hover { background: var(--accent-soft); }
+.topbtn { font: 600 13px/1 var(--font-body); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 13px 15px; cursor: pointer; box-shadow: var(--shadow); }
+.topbtn:hover, .topbtn[aria-expanded="true"] { background: var(--accent-soft); }
+#projpanel {
+  top: calc(env(safe-area-inset-top, 0px) + 126px); right: max(16px, env(safe-area-inset-right, 0px));
+  padding: 12px 14px; display: grid; gap: 12px; width: min(330px, calc(100% - 32px));
+  max-height: calc(100% - 146px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; z-index: 7;
+}
+#projpanel .lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: block; }
+#projpanel strong { font-family: var(--font-display); font-size: 17px; line-height: 1.2; display: block; overflow-wrap: anywhere; }
+#projpanel .meta { color: var(--muted); font-size: 12.5px; margin: 2px 0 0; display: block; }
+#projpanel .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#projpanel .tool { border-color: var(--line); padding: 8px 11px; }
+#projpanel .tool:disabled { opacity: 0.45; cursor: default; }
+#projpanel .pj-ab { padding: 0; }
+#projpanel .pj-ab button { flex: 1; border: 1px solid var(--line); }
+.pj-block { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pj-block label, .pj-block .lbl2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+#projpanel input, #projpanel textarea { font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line);
+  border-radius: 7px; padding: 7px 8px; min-width: 0; }
+#projpanel input { flex: 1; }
+#projpanel textarea { width: 100%; box-sizing: border-box; resize: vertical; font-size: 12px; }
+#pj-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+#pj-list li { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+#pj-list li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pj-list li small { color: var(--muted); font-size: 11.5px; }
+#pj-list li.cur span { font-weight: 700; }
+#pj-list .tool { padding: 6px 9px; }
+#pj-list .empty { color: var(--muted); font-size: 12.5px; }
+#beforebar { top: calc(env(safe-area-inset-top, 0px) + 126px); left: max(16px, env(safe-area-inset-left, 0px)); display: flex; gap: 10px; align-items: center;
+  padding: 6px 6px 6px 14px; font: 600 13px var(--font-body); z-index: 8; }
+#beforebar .tool { border-color: var(--line); padding: 8px 11px; background: var(--accent); color: var(--accent-fg); }
+@media (max-width: 640px) {
+  #projpanel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); left: 10px; right: 10px; width: auto; max-height: 62vh; }
+}
 #gal { inset: 0; z-index: 30; background: var(--panel-solid); overflow-y: auto; overscroll-behavior: contain;
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -198,7 +258,8 @@ select#goto {
   .brand { flex: 0 1 auto; padding: 9px 11px; }
   .brand h1 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .right { gap: 6px; flex: 0 0 auto; }
-  #btn-gal { padding: 12px 10px; }
+  #btn-gal, .topbtn { padding: 12px 10px; }
+  #beforebar { top: calc(env(safe-area-inset-top, 0px) + 205px); left: 10px; }
   .seg button { padding: 9px 10px; }
   #sub { top: calc(env(safe-area-inset-top, 0px) + 64px); }
   #help { display: none; }
@@ -217,6 +278,7 @@ select#goto {
     <p>Relevé du plan + photos · état actuel avant travaux</p>
   </div>
   <div class="right">
+    <button id="btn-proj" class="topbtn" aria-expanded="false" aria-controls="projpanel">Projets</button>
     <button id="btn-gal" aria-haspopup="dialog">Rendus</button>
     <div class="seg panel" role="group" aria-label="Mode">
       <button id="m-maquette" aria-pressed="true">Maquette</button>
@@ -243,8 +305,68 @@ select#goto {
     <button id="wallmode" class="tool" aria-pressed="false">Casser un mur</button>
     <button id="furnmode" class="tool" aria-pressed="false">Meubles</button>
     <button id="ouvmode" class="tool" aria-pressed="false">Ouvertures</button>
+    <button id="finmode" class="tool" aria-pressed="false">Revêtements</button>
   </div>
 </div>
+
+<aside id="projpanel" class="ui panel" hidden aria-live="polite">
+  <div>
+    <span class="lvl">Projet en cours</span>
+    <strong id="pj-name">Plan d’origine</strong>
+    <span class="meta" id="pj-meta"></span>
+  </div>
+  <div class="seg pj-ab" role="group" aria-label="Comparer">
+    <button id="pj-before" aria-pressed="false">Avant travaux</button>
+    <button id="pj-after" aria-pressed="true">Projet</button>
+  </div>
+  <div class="pj-block">
+    <label for="pj-input">Enregistrer sous</label>
+    <div class="row"><input id="pj-input" type="text" maxlength="40" placeholder="Nom du projet"><button id="pj-save" class="tool">Enregistrer</button></div>
+  </div>
+  <div class="pj-block">
+    <span class="lbl2">Mes projets</span>
+    <ul id="pj-list"></ul>
+    <button id="pj-new" class="tool">Repartir du plan d’origine</button>
+  </div>
+  <div class="pj-block">
+    <span class="lbl2">Partager</span>
+    <p class="meta">Le lien ouvre la visite avec ce projet. Il ne contient que les modifications, rien d’autre.</p>
+    <div class="row"><button id="pj-share" class="tool">Créer le lien</button><button id="pj-copy" class="tool" hidden>Copier</button></div>
+    <textarea id="pj-link" rows="3" readonly hidden aria-label="Lien de partage"></textarea>
+  </div>
+  <div class="pj-block">
+    <label for="pj-import">Ouvrir un lien reçu</label>
+    <textarea id="pj-import" rows="2" placeholder="Collez le lien ou le code du projet"></textarea>
+    <div class="row"><button id="pj-load" class="tool">Ouvrir</button></div>
+  </div>
+  <p id="pj-msg" class="opmsg" hidden></p>
+</aside>
+<div id="beforebar" class="ui panel" hidden><span>Vue avant travaux</span><button id="pj-back" class="tool">Revenir au projet</button></div>
+
+<aside id="finpanel" class="ui panel" hidden aria-live="polite">
+  <div>
+    <span class="lvl" id="fn-lvl">Aucune surface sélectionnée</span>
+    <strong id="fn-name">Cliquez un mur ou un sol</strong>
+    <span class="meta" id="fn-meta"></span>
+  </div>
+  <div id="fn-edit" hidden>
+    <div class="seg fn-scope" role="group" aria-label="Étendue" id="fn-scope">
+      <button data-sc="mur" aria-pressed="true">Ce mur</button>
+      <button data-sc="piece" aria-pressed="false">Toute la pièce</button>
+    </div>
+    <span class="lbl2" id="fn-paint-lbl">Peinture</span>
+    <div class="sw" id="fn-paint"></div>
+    <span class="lbl2">Matériaux</span>
+    <div class="sw" id="fn-mats"></div>
+    <div class="row"><button id="fn-orig" class="tool">Remettre l’origine</button></div>
+  </div>
+  <p id="fn-msg" class="opmsg" hidden></p>
+  <div class="row sep">
+    <span id="fn-count">Revêtements d’origine</span>
+    <button id="fn-undo" class="tool" disabled>Annuler</button>
+    <button id="fn-reset" class="tool" disabled>Tout remettre</button>
+  </div>
+</aside>
 
 <aside id="wallpanel" class="ui panel" hidden aria-live="polite">
   <div class="seg wp-modes" role="group" aria-label="Que casser">
@@ -562,7 +684,9 @@ async function onModelAsync(gltf) {
   if (USE_LIGHTMAPS) applyLightmaps().catch((e) => console.warn('Eclairage precalcule indisponible, eclairage simple utilise', e));
   restoreWalls();
   restoreFurn();
+  initFinishes(gltf.scene);
   applyCut('all');
+  initProjects().catch((e) => console.warn('Projets', e));
   setHelp();
   loop();
 }
@@ -609,7 +733,7 @@ function applyCut(c) {
     const f = furn[k];
     const pw = PW[k];
     if (k === 'MatLib') { g.visible = false; continue; }
-    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? present(f) && !hide.includes(f.level) : pw ? !hide.includes(pw.level) : !hide.includes(k);
+    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? present(f) && !hide.includes(f.level) : pw ? !hide.includes(pw.level) : !hide.includes(k.startsWith('Sol__') ? k.split('__')[1] : k);
   }
   if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
   for (const b of document.querySelectorAll('[data-cut]')) b.setAttribute('aria-pressed', String(b.dataset.cut === String(c)));
@@ -749,6 +873,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (moved < 6 && wallMode && wmMode === 'tout') pickWall(e.clientX, e.clientY);
   if (moved < 6 && furnMode && !furnDrag) pickFurn(e.clientX, e.clientY);
   if (moved < 6 && ouvMode && !ouvDrag) pickOuv(e.clientX, e.clientY);
+  if (moved < 6 && finMode) pickFin(e.clientX, e.clientY);
   drag = null;
 });
 canvas.addEventListener('pointercancel', () => { drag = null; });
@@ -950,6 +1075,8 @@ function pickWall(cx, cy) {
   wp.meta.textContent = 'Visez une cloison entre deux pièces.';
 }
 function toggleWallMode(on) {
+  if (on && beforeView) exitBefore();
+  if (on && finMode) toggleFinMode(false);
   wallMode = on;
   btnWall.setAttribute('aria-pressed', String(on));
   wp.panel.hidden = !on;
@@ -1186,6 +1313,8 @@ const endFurnDrag = (e) => {
 canvas.addEventListener('pointerup', endFurnDrag);
 canvas.addEventListener('pointercancel', endFurnDrag);
 function toggleFurnMode(on) {
+  if (on && beforeView) exitBefore();
+  if (on && finMode) toggleFinMode(false);
   furnMode = on;
   btnFurn.setAttribute('aria-pressed', String(on));
   fp.panel.hidden = !on;
@@ -1253,7 +1382,9 @@ const DEF = {   // dimensions par defaut quand on ajoute ou change de type (zb/z
 const GAP = 0.15;              // ecart minimal entre deux ouvertures (trumeau)
 const isDoor = (t) => t === 'porte' || t === 'porte_int' || t === 'baie' || t === 'porte_fenetre';
 const baseName = (n) => n.replace(/\.\d+$/, '');
-const mat = (n) => MATS[n] || MATS.Platre || new THREE.MeshStandardMaterial({ color: 0xdddddd });
+const PAINTS = {};
+const mat = (n) => (n && n[0] === '#' ? (PAINTS[n] ||= new THREE.MeshStandardMaterial({ color: new THREE.Color(n), roughness: 0.92, name: `Peinture ${n}` }))
+  : MATS[n] || MATS.Platre || new THREE.MeshStandardMaterial({ color: 0xdddddd }));
 
 // (u, t, z) du repere du mur -> (x, y, z) du plan
 const toPlan = (d, u, t, z) => (d.axis === 'x' ? [u, t, z] : [t, u, z]);
@@ -1311,14 +1442,17 @@ class Builder {
   }
 }
 
-function bandMat(face, u, z) {
-  let m = face.base;
-  for (const b of face.bands) if (u > b.u0 && u < b.u1 && z > b.z0 && z < b.z1) m = b.mat;   // tries : les plus petites en dernier
+function bandMat(face, u, z, ov) {
+  let m = face.base, plinthe = false;
+  for (const b of face.bands) if (u > b.u0 && u < b.u1 && z > b.z0 && z < b.z1) { m = b.mat; plinthe = /plinthe/i.test(b.src || ''); }   // tries : les plus petites en dernier
+  if (ov && !plinthe) for (const o of ov) if (u > o.u0 && u < o.u1) m = o.mat;      // revetement choisi (on garde les plinthes)
   return m;
 }
 
-function buildWallBody(B, d, ops) {
+function buildWallBody(B, d, ops, fin) {
   const U = new Set([d.a0, d.a1]), Z = new Set([d.z0, d.z1]);
+  const fA = fin && fin.A, fB = fin && fin.B;
+  for (const o of [...(fA || []), ...(fB || [])]) { U.add(o.u0); U.add(o.u1); }
   for (const o of ops) { U.add(o.u - o.w / 2); U.add(o.u + o.w / 2); Z.add(o.zb); Z.add(o.zt); }
   for (const f of [d.faceA, d.faceB]) for (const b of f.bands) { U.add(b.u0); U.add(b.u1); Z.add(b.z0); Z.add(b.z1); }
   const us = [...U].filter((v) => v >= d.a0 - 1e-6 && v <= d.a1 + 1e-6).sort((a, b) => a - b);
@@ -1346,8 +1480,8 @@ function buildWallBody(B, d, ops) {
       if (!solid(i, j)) continue;
       const u0 = us[i], u1 = us[i + 1], z0 = zs[j], z1 = zs[j + 1], uc = (u0 + u1) / 2, zc = (z0 + z1) / 2;
       const du = vU(u1 - u0), dz = [0, 0, z1 - z0];
-      B.quad(bandMat(d.faceA, uc, zc), toPlan(d, u0, d.tA, z0), du, dz, nT(-1));
-      B.quad(bandMat(d.faceB, uc, zc), toPlan(d, u0, d.tB, z0), du, dz, nT(1));
+      B.quad(bandMat(d.faceA, uc, zc, fA), toPlan(d, u0, d.tA, z0), du, dz, nT(-1));
+      B.quad(bandMat(d.faceB, uc, zc, fB), toPlan(d, u0, d.tB, z0), du, dz, nT(1));
       const L = solid(i - 1, j), R = solid(i + 1, j), Dn = solid(i, j - 1), Up = solid(i, j + 1);
       if (!L) B.quad(L === null ? outerMat : rev(i - 1, j), toPlan(d, u0, d.tA, z0), vT(T), dz, nU(-1));
       if (!R) B.quad(R === null ? outerMat : rev(i + 1, j), toPlan(d, u1, d.tA, z0), vT(T), dz, nU(1));
@@ -1449,7 +1583,7 @@ function rebuildWall(id, withCollider = true) {
   const w = PW[id], d = w.def;
   const B = new Builder();
   if (d.kind === 'roof') { buildRoofPan(B, d, w.ops); for (const o of w.ops) buildVelux(B, d, o); }
-  else { buildWallBody(B, d, w.ops); for (const o of w.ops) buildJoinery(B, d, o); }
+  else { buildWallBody(B, d, w.ops, w.fin); for (const o of w.ops) buildJoinery(B, d, o); }
   const mesh = B.mesh();
   mesh.name = `${id}_maillage`;
   if (w.mesh) { w.group.remove(w.mesh); w.mesh.geometry.dispose(); }
@@ -2012,6 +2146,8 @@ canvas.addEventListener('pointerup', endCasse);
 canvas.addEventListener('pointercancel', endCasse);
 
 function toggleOuvMode(on) {
+  if (on && beforeView) exitBefore();
+  if (on && finMode) toggleFinMode(false);
   ouvMode = on;
   btnOuv.setAttribute('aria-pressed', String(on));
   op.panel.hidden = !on;
@@ -2036,6 +2172,7 @@ btnMeasure.addEventListener('click', () => {
   if (measuring && wallMode) toggleWallMode(false);
   if (measuring && furnMode) toggleFurnMode(false);
   if (measuring && ouvMode) toggleOuvMode(false);
+  if (measuring && finMode) toggleFinMode(false);
   setHelp();
 });
 btnClear.addEventListener('click', () => {
@@ -2068,10 +2205,457 @@ function addMeasurePoint(cx, cy) {
   }
 }
 
+
+
+// ---------------------------------------------------------------- revetements : peinture et materiaux des murs, sols des pieces
+const FINSTORE = 'maison-revetements';
+const PAINT_SET = [['#f4f2ec', 'Blanc'], ['#ebe4d4', 'Blanc cassé'], ['#ddd0b6', 'Lin'], ['#cfd0cb', 'Gris perle'], ['#8d9195', 'Gris'],
+  ['#5c636a', 'Ardoise'], ['#a8b496', 'Vert sauge'], ['#6f8a74', 'Vert amande'], ['#9fb1bf', 'Bleu gris'], ['#3c4b63', 'Bleu nuit'],
+  ['#e3cc8c', 'Jaune paille'], ['#c27a5a', 'Terracotta']];
+const WALL_MATS = [['Papier_peint', 'Papier peint'], ['Papier_fleurs', 'Papier fleuri'], ['Papier_rayures', 'Papier rayé'], ['Papier_beige', 'Papier beige'],
+  ['Crepi', 'Crépi'], ['Crepi_gris', 'Crépi gris'], ['Enduit_gris', 'Enduit'], ['Faience_carreaux', 'Faïence'], ['Faience_cuisine', 'Faïence cuisine'],
+  ['Lambris', 'Lambris'], ['Lambris_clair', 'Lambris clair'], ['Brique', 'Brique'], ['Moellons', 'Pierre'], ['Platre', 'Plâtre brut']];
+const FLOOR_MATS = [['Parquet_sapin', 'Parquet'], ['Tomettes', 'Tomettes'], ['Carreau_clair', 'Carrelage clair'], ['Carreau_beige', 'Carrelage beige'],
+  ['Dalles_vinyle', 'Dalles vinyle'], ['Vinyle_motif', 'Vinyle'], ['Plancher_brut', 'Plancher brut'], ['Beton_clair', 'Béton ciré'], ['Ardoise', 'Ardoise']];
+const FLOORS = {};            // maillages de sol par nom : { mesh, orig (materiau), base (nom), cur }
+const floorCache = {};
+let finMode = false, finSel = null, finScope = 'mur';
+const finHist = [];
+const fn = {
+  panel: document.getElementById('finpanel'), lvl: document.getElementById('fn-lvl'), name: document.getElementById('fn-name'), meta: document.getElementById('fn-meta'),
+  edit: document.getElementById('fn-edit'), scope: document.getElementById('fn-scope'), paint: document.getElementById('fn-paint'), paintLbl: document.getElementById('fn-paint-lbl'),
+  mats: document.getElementById('fn-mats'), orig: document.getElementById('fn-orig'), msg: document.getElementById('fn-msg'),
+  count: document.getElementById('fn-count'), undo: document.getElementById('fn-undo'), reset: document.getElementById('fn-reset'),
+};
+const btnFin = document.getElementById('finmode');
+const ovFinMat = new THREE.MeshBasicMaterial({ color: 0xe0a020, transparent: true, opacity: 0.16, depthTest: false });
+const ovFin = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ovFinMat);
+ovFin.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0xe0a020, depthTest: false, transparent: true })));
+ovFin.renderOrder = 22; ovFin.children[0].renderOrder = 23; ovFin.visible = false; scene.add(ovFin);
+
+function initFinishes(root) {
+  root.traverse((o) => {
+    if (!o.isMesh || !/^Sol__/.test(o.name)) return;
+    FLOORS[o.name] = { mesh: o, orig: o.material, base: baseName(o.material.name), cur: null };
+  });
+  applyFin(lsGet(FINSTORE, { murs: {}, sols: {} }));
+}
+function finState() {
+  const murs = {}, sols = {};
+  for (const [id, w] of Object.entries(PW)) if (w.fin && ((w.fin.A || []).length || (w.fin.B || []).length)) murs[id] = { A: w.fin.A || [], B: w.fin.B || [] };
+  for (const [k, f] of Object.entries(FLOORS)) if (f.cur) sols[k] = f.cur;
+  return { murs, sols };
+}
+function floorMatFor(f, name) {
+  const key = `${f.base}>${name}`;
+  if (floorCache[key]) return floorCache[key];
+  const src = MATS[name]; if (!src) return f.orig;
+  const m = src.clone();
+  const to = TILES[f.base] || [1, 1], tn = TILES[name] || [1, 1];
+  if (src.map) { m.map = src.map.clone(); m.map.repeat.set(to[0] / tn[0], to[1] / tn[1]); m.map.needsUpdate = true; }
+  return (floorCache[key] = m);
+}
+function setFloor(k, name) {
+  const f = FLOORS[k]; if (!f) return;
+  f.cur = name && name !== f.base ? name : null;
+  f.mesh.material = f.cur ? floorMatFor(f, f.cur) : f.orig;
+}
+function applyFin(st) {
+  for (const [id, w] of Object.entries(PW)) {
+    const nf = st.murs && st.murs[id] ? { A: (st.murs[id].A || []).map((o) => ({ ...o })), B: (st.murs[id].B || []).map((o) => ({ ...o })) } : null;
+    if (JSON.stringify(nf) !== JSON.stringify(w.fin || null)) { w.fin = nf; rebuildWall(id, false); }
+  }
+  for (const k of Object.keys(FLOORS)) setFloor(k, (st.sols || {})[k] || null);
+}
+function saveFin() { lsSet(FINSTORE, finState()); }
+function finRecord() { finHist.push(JSON.parse(JSON.stringify(finState()))); if (finHist.length > 100) finHist.shift(); }
+
+// piece au contact d'une face de mur, au point u (sonde a 5 cm devant la face)
+function roomAt(lvl, x, y) { return ROOMS.find((r) => r.lvl === lvl && x > r.r[0] && x < r.r[1] && y > r.r[2] && y < r.r[3]) || null; }
+const LVL_N = { RDC: 0, Etage1: 1 };
+function faceRoom(d, side, u) {
+  const t = side === 'A' ? d.tA - 0.05 : d.tB + 0.05;
+  const [x, y] = d.axis === 'x' ? [u, t] : [t, u];
+  return roomAt(LVL_N[d.level], x, y);
+}
+function faceSpan(d, side, room) {
+  if (!room) return [d.a0, d.a1];
+  const [lo, hi] = d.axis === 'x' ? [room.r[0], room.r[1]] : [room.r[2], room.r[3]];
+  return [Math.max(d.a0, lo - 0.08), Math.min(d.a1, hi + 0.08)];
+}
+// toutes les faces de murs qui bordent une piece
+function roomFaces(room) {
+  const out = [];
+  for (const w of Object.values(PW)) {
+    const d = w.def;
+    if (d.kind === 'roof' || LVL_N[d.level] !== room.lvl) continue;
+    for (const side of ['A', 'B']) {
+      const t = side === 'A' ? d.tA - 0.05 : d.tB + 0.05;
+      const inT = d.axis === 'x' ? t > room.r[2] && t < room.r[3] : t > room.r[0] && t < room.r[1];
+      if (!inT) continue;
+      const [u0, u1] = faceSpan(d, side, room);
+      if (u1 - u0 > 0.05) out.push({ w, side, u0, u1 });
+    }
+  }
+  return out;
+}
+function setFace(w, side, u0, u1, matName) {
+  const fin = w.fin || { A: [], B: [] };
+  const list = (fin[side] || []).filter((o) => o.u1 <= u0 + 1e-6 || o.u0 >= u1 - 1e-6);    // on remplace ce qui est sous la nouvelle zone
+  if (matName) list.push({ u0, u1, mat: matName });
+  fin[side] = list;
+  w.fin = (fin.A.length || fin.B.length) ? fin : null;
+  rebuildWall(w.def.id, false);
+}
+const finLabel = (n) => (n && n[0] === '#' ? (PAINT_SET.find(([c]) => c === n)?.[1] || `Peinture ${n}`) : ([...WALL_MATS, ...FLOOR_MATS].find(([k]) => k === n)?.[1] || n));
+function currentFinOf(sel) {
+  if (!sel) return null;
+  if (sel.kind === 'sol') return FLOORS[sel.key].cur || FLOORS[sel.key].base;
+  const um = (sel.u0 + sel.u1) / 2, fin = sel.w.fin && sel.w.fin[sel.side];
+  const o = fin && fin.find((q) => um > q.u0 && um < q.u1);
+  return o ? o.mat : null;
+}
+function applyChoice(name) {
+  if (!finSel) return;
+  finRecord();
+  if (finSel.kind === 'sol') {
+    setFloor(finSel.key, name);
+  } else if (finScope === 'piece' && finSel.room) {
+    for (const f of roomFaces(finSel.room)) setFace(f.w, f.side, f.u0, f.u1, name);
+  } else {
+    setFace(finSel.w, finSel.side, finSel.u0, finSel.u1, name);
+  }
+  saveFin(); renderFinPanel();
+}
+function swatchBtn(label, draw, onClick, pressed) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.setAttribute('aria-pressed', String(!!pressed)); b.title = label;
+  b.append(draw(), document.createTextNode(label));
+  b.addEventListener('click', onClick);
+  return b;
+}
+function matThumb(name) {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 36;
+  const g = c.getContext('2d'), m = MATS[name];
+  const img = m && m.map && m.map.image;
+  try {
+    if (img) g.drawImage(img, 0, 0, Math.min(img.width, 256), Math.min(img.height, 144), 0, 0, 64, 36);
+    else { g.fillStyle = m ? `#${m.color.getHexString()}` : '#ccc'; g.fillRect(0, 0, 64, 36); }
+  } catch (e) { g.fillStyle = '#ccc'; g.fillRect(0, 0, 64, 36); }
+  return c;
+}
+function renderFinPanel(msg = '') {
+  fn.msg.textContent = msg; fn.msg.hidden = !msg;
+  fn.edit.hidden = !finSel;
+  if (!finSel) {
+    fn.lvl.textContent = 'Aucune surface sélectionnée';
+    fn.name.textContent = 'Cliquez un mur ou un sol';
+    fn.meta.textContent = 'Peinture, papier peint, carrelage, parquet… En vue Maquette, Afficher RDC ou 1er permet de viser d’en haut.';
+  } else {
+    const cur = currentFinOf(finSel);
+    if (finSel.kind === 'sol') {
+      fn.lvl.textContent = `Sol · ${LEVEL_LABEL[['RDC', 'Etage1', 'Combles'][finSel.lvl]] || 'Combles'}`;
+      fn.name.textContent = finSel.room ? finSel.room.name : 'Sol';
+      fn.meta.textContent = `Actuel : ${finLabel(cur)}`;
+    } else {
+      const d = finSel.w.def;
+      fn.lvl.textContent = finSel.room ? `Mur · ${LEVEL_LABEL[d.level]}` : 'Façade';
+      fn.name.textContent = finSel.room ? `${finSel.room.name} · ${wallLabel(d).replace(/^Cloison · /, 'cloison ')}` : d.name;
+      fn.meta.textContent = cur ? `Actuel : ${finLabel(cur)}` : 'Revêtement d’origine';
+    }
+    fn.scope.hidden = finSel.kind === 'sol' || !finSel.room;
+    for (const b of fn.scope.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.sc === finScope));
+    const wallish = finSel.kind !== 'sol';
+    fn.paint.hidden = !wallish; fn.paintLbl.hidden = !wallish;
+    fn.paint.innerHTML = '';
+    if (wallish) {
+      for (const [c, l] of PAINT_SET) fn.paint.append(swatchBtn(l, () => { const i = document.createElement('i'); i.style.background = c; return i; }, () => applyChoice(c), cur === c));
+      const lab = document.createElement('label'); lab.textContent = 'Autre';
+      const inp = document.createElement('input'); inp.type = 'color'; inp.value = cur && cur[0] === '#' ? cur : '#d8cbb0';
+      inp.addEventListener('change', () => applyChoice(inp.value)); lab.prepend(inp); fn.paint.append(lab);
+    }
+    fn.mats.innerHTML = '';
+    for (const [k, l] of (wallish ? WALL_MATS : FLOOR_MATS)) if (MATS[k]) fn.mats.append(swatchBtn(l, () => matThumb(k), () => applyChoice(k), cur === k));
+  }
+  const st = finState();
+  const n = Object.values(st.murs).reduce((a, f) => a + f.A.length + f.B.length, 0) + Object.keys(st.sols).length;
+  fn.count.textContent = n ? `${n} revêtement${n > 1 ? 's' : ''} changé${n > 1 ? 's' : ''}` : 'Revêtements d’origine';
+  fn.undo.disabled = !finHist.length; fn.reset.disabled = !n;
+  refreshFinOverlay();
+}
+function refreshFinOverlay() {
+  ovFin.visible = false;
+  if (!finMode || !finSel) return;
+  if (finSel.kind === 'sol') {
+    const r = finSel.room ? finSel.room.r : null, bb = new THREE.Box3().setFromObject(FLOORS[finSel.key].mesh);
+    const [x0, x1, y0, y1] = r || [bb.min.x, bb.max.x, -bb.max.z, -bb.min.z];
+    const zc = bb.max.y;
+    ovFin.quaternion.identity();
+    ovFin.position.set((x0 + x1) / 2, zc + 0.02, -(y0 + y1) / 2); ovFin.scale.set(x1 - x0, 0.04, y1 - y0); ovFin.visible = true;
+  } else {
+    const d = finSel.w.def, sc = finScope === 'piece' && finSel.room;
+    if (sc) { finSel.u0r = null; }
+    const t = finSel.side === 'A' ? d.tA - 0.015 : d.tB + 0.015;
+    placeBox(ovFin, d, finSel.u0, finSel.u1, t - 0.012, t + 0.012, Math.max(d.z0, d.floor ?? d.z0), d.kind === 'ext' ? d.z1 - 0.21 : d.z1);
+  }
+}
+function pickFin(cx, cy) {
+  rayAt(cx, cy);
+  const walls_ = Object.values(PW).filter((w) => w.group.visible && w.def.kind !== 'roof').map((w) => w.mesh);
+  const floors_ = Object.values(FLOORS).filter((f) => { let o = f.mesh; while (o) { if (!o.visible) return false; o = o.parent; } return true; }).map((f) => f.mesh);
+  const h = ray.intersectObjects([...walls_, ...floors_], false)[0];
+  if (!h) { finSel = null; renderFinPanel(); return; }
+  const p = h.point, x = p.x, y = -p.z, z = p.y;
+  if (/^Sol_/.test(h.object.name)) {
+    const lvl = z < LVZ[1] - 0.3 ? 0 : z < LVZ[2] - 0.3 ? 1 : 2;
+    finSel = { kind: 'sol', key: h.object.name, lvl, room: roomAt(lvl, x, y) };
+  } else {
+    const w = PW[h.object.name.replace(/_maillage$/, '')], d = w.def;
+    const u = d.axis === 'x' ? x : y, t = d.axis === 'x' ? y : x;
+    const side = Math.abs(t - d.tA) <= Math.abs(t - d.tB) ? 'A' : 'B';
+    const room = faceRoom(d, side, u);
+    const [u0, u1] = faceSpan(d, side, room);
+    finSel = { kind: 'mur', w, side, u0, u1, room };
+  }
+  renderFinPanel();
+}
+for (const b of fn.scope.querySelectorAll('button')) b.addEventListener('click', () => { finScope = b.dataset.sc; renderFinPanel(); });
+fn.orig.addEventListener('click', () => applyChoice(null));
+fn.undo.addEventListener('click', () => { const st = finHist.pop(); if (!st) return; applyFin(st); saveFin(); renderFinPanel(); });
+fn.reset.addEventListener('click', () => { finRecord(); applyFin({ murs: {}, sols: {} }); saveFin(); renderFinPanel('Tous les revêtements sont revenus à l’origine.'); });
+function toggleFinMode(on) {
+  if (on && beforeView) exitBefore();
+  finMode = on;
+  btnFin.setAttribute('aria-pressed', String(on));
+  fn.panel.hidden = !on;
+  if (!on) finSel = null;
+  if (on) {
+    if (measuring) btnMeasure.click();
+    if (wallMode) toggleWallMode(false);
+    if (furnMode) toggleFurnMode(false);
+    if (ouvMode) toggleOuvMode(false);
+  }
+  renderFinPanel(); setHelp();
+}
+btnFin.addEventListener('click', () => toggleFinMode(!finMode));
+
+// ---------------------------------------------------------------- projets : variantes enregistrees, avant / apres, partage par lien
+// Un projet = les modifications par rapport au plan d'origine : cloisons abattues, ouvertures (et demolitions), meubles.
+const PSTORE = 'maison-projets', PCUR = 'maison-projet-courant';
+const SHARE_BASE = 'https://cloviscorde.github.io/House/';
+let beforeView = null;
+const pj = {
+  panel: document.getElementById('projpanel'), btn: document.getElementById('btn-proj'), name: document.getElementById('pj-name'),
+  meta: document.getElementById('pj-meta'), before: document.getElementById('pj-before'), after: document.getElementById('pj-after'),
+  input: document.getElementById('pj-input'), save: document.getElementById('pj-save'), list: document.getElementById('pj-list'),
+  nouveau: document.getElementById('pj-new'), share: document.getElementById('pj-share'), copy: document.getElementById('pj-copy'),
+  link: document.getElementById('pj-link'), imp: document.getElementById('pj-import'), load: document.getElementById('pj-load'),
+  msg: document.getElementById('pj-msg'), bar: document.getElementById('beforebar'), back: document.getElementById('pj-back'),
+};
+const r3 = (v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v);
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } };
+function getState() {
+  const st = { v: 1, murs: [...removedOrder], ouv: {}, meubles: {} };
+  for (const [id, w] of Object.entries(PW)) {
+    if (JSON.stringify(w.ops) !== JSON.stringify(w.orig)) st.ouv[id] = w.ops.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, r3(v)])));
+  }
+  for (const f of Object.values(furn)) if (changed(f)) st.meubles[f.key] = { x: r3(f.x), z: r3(f.z), rot: r3(f.rot), removed: f.removed };
+  const fin = finState();
+  if (Object.keys(fin.murs).length || Object.keys(fin.sols).length) st.fin = fin;
+  return st;
+}
+const isEmptyState = (st) => !st.murs.length && !Object.keys(st.ouv).length && !Object.keys(st.meubles).length && !st.fin;
+const sameState = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+function applyState(st, persist, keepHist = false) {
+  st = st || {};
+  if (selWall) select(null);
+  wpSel = null; selW = null; selI = -1;
+  if (selFurn) selectFurn(null);
+  const rem = st.murs || [];
+  for (const k of [...removedOrder]) if (!rem.includes(k)) setRemoved(walls[k], false);
+  for (const k of rem) if (walls[k] && !walls[k].removed) setRemoved(walls[k], true);
+  for (const [id, w] of Object.entries(PW)) {
+    const ops = (st.ouv && st.ouv[id]) || w.orig;
+    if (JSON.stringify(ops) !== JSON.stringify(w.ops)) { w.ops = ops.map((o) => ({ ...o })); rebuildWall(id); }
+  }
+  for (const f of Object.values(furn)) {
+    const t = (st.meubles && st.meubles[f.key]) || { x: f.home.x, z: f.home.z, rot: 0, removed: f.home.removed };
+    Object.assign(f, { x: t.x, z: t.z, rot: t.rot || 0, removed: !!t.removed }); applyFurn(f);
+  }
+  applyFin(st.fin || { murs: {}, sols: {} });
+  if (!keepHist) { ouvHist.length = 0; casseHist.length = 0; furnHist.length = 0; finHist.length = 0; }
+  finSel = null;
+  if (persist) { save(); saveOuv(); saveFurn(); saveFin(); }
+  applyCut(mode === 'maquette' ? cut : 'all');
+  if (wallMode) renderPanel(); if (ouvMode) renderOuvPanel(); if (furnMode) renderFurnPanel(); if (finMode) renderFinPanel();
+}
+// --- avant / apres
+function enterBefore() {
+  if (beforeView) return;
+  for (const [on, f] of [[wallMode, toggleWallMode], [ouvMode, toggleOuvMode], [furnMode, toggleFurnMode], [finMode, toggleFinMode]]) if (on) f(false);
+  beforeView = getState();
+  applyState({}, false, true);
+  pj.bar.hidden = false; renderProjects();
+}
+function exitBefore() {
+  if (!beforeView) return;
+  const st = beforeView; beforeView = null;
+  applyState(st, false, true);
+  pj.bar.hidden = true; renderProjects();
+}
+pj.before.addEventListener('click', enterBefore);
+pj.after.addEventListener('click', exitBefore);
+pj.back.addEventListener('click', exitBefore);
+// --- liste des projets
+function projects() { return lsGet(PSTORE, {}); }
+function curName() { return lsGet(PCUR, null); }
+function summary(st) {
+  const parts = [];
+  const nOuv = Object.values(st.ouv).length, nDem = st.murs.length + Object.values(st.ouv).flat().filter((o) => ROUGH(o.type)).length;
+  if (nDem) parts.push(`${nDem} démolition${nDem > 1 ? 's' : ''}`);
+  if (nOuv) parts.push(`${nOuv} mur${nOuv > 1 ? 's' : ''} ou pan${nOuv > 1 ? 's' : ''} de toit retouché${nOuv > 1 ? 's' : ''}`);
+  const nF = st.fin ? Object.values(st.fin.murs).reduce((a, f) => a + (f.A || []).length + (f.B || []).length, 0) + Object.keys(st.fin.sols).length : 0;
+  if (nF) parts.push(`${nF} revêtement${nF > 1 ? 's' : ''} changé${nF > 1 ? 's' : ''}`);
+  const nM = Object.keys(st.meubles).length;
+  if (nM) parts.push(`${nM} meuble${nM > 1 ? 's' : ''} déplacé${nM > 1 ? 's' : ''} ou enlevé${nM > 1 ? 's' : ''}`);
+  return parts.join(' · ') || 'Aucune modification';
+}
+const fmtDate = (t) => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+function pjMsg(m) { pj.msg.textContent = m; pj.msg.hidden = !m; }
+function renderProjects() {
+  const st = beforeView || getState(), P = projects(), cur = curName();
+  const dirty = cur && P[cur] && !sameState(P[cur].st, st);
+  pj.name.textContent = cur ? `${cur}${dirty ? ' (modifié)' : ''}` : (isEmptyState(st) ? 'Plan d’origine' : 'Projet sans nom');
+  pj.meta.textContent = summary(st);
+  pj.before.setAttribute('aria-pressed', String(!!beforeView)); pj.after.setAttribute('aria-pressed', String(!beforeView));
+  if (!pj.input.value && cur) pj.input.value = cur;
+  const names = Object.keys(P).sort((a, b) => P[b].t - P[a].t);
+  pj.list.innerHTML = '';
+  if (!names.length) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Aucun projet enregistré.'; pj.list.append(li); }
+  for (const n of names) {
+    const li = document.createElement('li');
+    if (n === cur) li.className = 'cur';
+    const sp = document.createElement('span'); sp.textContent = n; sp.title = summary(P[n].st);
+    const sm = document.createElement('small'); sm.textContent = fmtDate(P[n].t);
+    const op = document.createElement('button'); op.className = 'tool'; op.textContent = 'Ouvrir'; op.addEventListener('click', () => openProject(n));
+    const del = document.createElement('button'); del.className = 'tool'; del.textContent = '×'; del.setAttribute('aria-label', `Supprimer ${n}`);
+    del.addEventListener('click', () => {
+      if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = 'Supprimer ?'; return; }
+      const Q = projects(); delete Q[n]; lsSet(PSTORE, Q); if (curName() === n) lsSet(PCUR, null);
+      pjMsg(`« ${n} » supprimé.`); renderProjects();
+    });
+    li.append(sp, sm, op, del); pj.list.append(li);
+  }
+}
+// garde le travail en cours avant de le remplacer (s'il n'est enregistre nulle part)
+function keepDraft() {
+  const st = getState();
+  if (isEmptyState(st)) return null;
+  const P = projects();
+  if (Object.values(P).some((q) => sameState(q.st, st))) return null;
+  const cur = curName();
+  const name = cur && P[cur] ? `${cur} (modifié)` : `Brouillon du ${new Date().toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+  P[name] = { st, t: Date.now() }; lsSet(PSTORE, P);
+  return name;
+}
+function openProject(n) {
+  if (beforeView) exitBefore();
+  const P = projects(); if (!P[n]) return;
+  const kept = keepDraft();
+  applyState(P[n].st, true); lsSet(PCUR, n); pj.input.value = n;
+  pjMsg(kept ? `« ${n} » ouvert. Le plan en cours a été gardé sous « ${kept} ».` : `« ${n} » ouvert.`);
+  renderProjects();
+}
+pj.save.addEventListener('click', () => {
+  if (beforeView) exitBefore();
+  const n = pj.input.value.trim().slice(0, 40);
+  if (!n) { pjMsg('Donnez un nom au projet.'); pj.input.focus(); return; }
+  const P = projects(); P[n] = { st: getState(), t: Date.now() }; lsSet(PSTORE, P); lsSet(PCUR, n);
+  pjMsg(`Projet « ${n} » enregistré.`); renderProjects();
+});
+pj.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') pj.save.click(); });
+pj.nouveau.addEventListener('click', () => {
+  if (beforeView) exitBefore();
+  const kept = keepDraft();
+  applyState({}, true); lsSet(PCUR, null); pj.input.value = '';
+  pjMsg(kept ? `Retour au plan d’origine. Le plan en cours a été gardé sous « ${kept} ».` : 'Retour au plan d’origine.');
+  renderProjects();
+});
+// --- partage : etat compresse dans le lien (#p=...)
+const b64u = (u8) => { let s = ''; for (const c of u8) s += String.fromCharCode(c); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = (t) => { const s = atob(t.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)); };
+async function pack(st) {
+  const raw = new TextEncoder().encode(JSON.stringify(st));
+  if (typeof CompressionStream === 'undefined') return 'j' + b64u(raw);
+  const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+  return 'z' + b64u(z);
+}
+async function unpack(code) {
+  const kind = code[0], u8 = unb64u(code.slice(1));
+  const raw = kind === 'z' ? new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()) : u8;
+  const st = JSON.parse(new TextDecoder().decode(raw));
+  if (!st || st.v !== 1) throw new Error('version');
+  return { v: 1, murs: Array.isArray(st.murs) ? st.murs.filter((k) => walls[k]) : [], ouv: Object.fromEntries(Object.entries(st.ouv || {}).filter(([k]) => PW[k])),
+    meubles: Object.fromEntries(Object.entries(st.meubles || {}).filter(([k]) => furn[k])),
+    ...(st.fin ? { fin: { murs: Object.fromEntries(Object.entries(st.fin.murs || {}).filter(([k]) => PW[k])), sols: Object.fromEntries(Object.entries(st.fin.sols || {}).filter(([k]) => FLOORS[k])) } } : {}), nom: typeof st.nom === 'string' ? st.nom.slice(0, 40) : '' };
+}
+const codeOf = (text) => { const m = /[#&]p=([A-Za-z0-9_-]+)/.exec(text); if (m) return m[1]; const t = text.trim(); return /^[zj][A-Za-z0-9_-]+$/.test(t) ? t : null; };
+pj.share.addEventListener('click', async () => {
+  const st = beforeView || getState();
+  if (isEmptyState(st)) { pjMsg('Rien à partager : c’est le plan d’origine.'); return; }
+  const cur = curName();
+  const code = await pack(cur ? { ...st, nom: cur } : st);
+  pj.link.value = `${SHARE_BASE}#p=${code}`; pj.link.hidden = false; pj.copy.hidden = false;
+  pj.link.focus(); pj.link.select();
+  pjMsg('');
+});
+pj.copy.addEventListener('click', async () => {
+  pj.link.select();
+  let ok = false;
+  try { await navigator.clipboard.writeText(pj.link.value); ok = true; } catch (e) { try { ok = document.execCommand('copy'); } catch (e2) { ok = false; } }
+  pjMsg(ok ? 'Lien copié.' : 'Copie bloquée par le navigateur : sélectionnez le lien et copiez-le à la main.');
+});
+async function importCode(code, origin) {
+  let st;
+  try { st = await unpack(code); } catch (e) { pjMsg('Ce lien ou ce code n’est pas lisible.'); return false; }
+  if (beforeView) exitBefore();
+  const kept = keepDraft();
+  const nom = st.nom || 'Projet reçu'; delete st.nom;
+  const P = projects(); let n = nom, k = 2; while (P[n] && !sameState(P[n].st, st)) n = `${nom} (${k++})`;
+  P[n] = { st, t: Date.now() }; lsSet(PSTORE, P); lsSet(PCUR, n);
+  applyState(st, true); pj.input.value = n;
+  pjMsg(`${origin} : « ${n} » ouvert et ajouté à vos projets.${kept ? ` Votre plan en cours a été gardé sous « ${kept} ».` : ''}`);
+  renderProjects();
+  return true;
+}
+pj.load.addEventListener('click', async () => {
+  const code = codeOf(pj.imp.value);
+  if (!code) { pjMsg('Collez un lien de la visite (avec #p=…) ou un code de projet.'); return; }
+  if (await importCode(code, 'Projet importé')) pj.imp.value = '';
+});
+// --- panneau
+function toggleProjects(on) {
+  pj.panel.hidden = !on; pj.btn.setAttribute('aria-expanded', String(on));
+  if (on) {
+    if (matchMedia('(max-width: 640px)').matches) for (const [m, f] of [[wallMode, toggleWallMode], [ouvMode, toggleOuvMode], [furnMode, toggleFurnMode]]) if (m) f(false);
+    pjMsg(''); pj.link.hidden = true; pj.copy.hidden = true; renderProjects();
+  }
+}
+pj.btn.addEventListener('click', () => toggleProjects(pj.panel.hidden));
+async function initProjects() {
+  const code = codeOf(location.hash);
+  if (!code) return;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* adresse figee */ }
+  toggleProjects(true);
+  await importCode(code, 'Lien partagé');
+}
+
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
   if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
+  if (finMode) { h.innerHTML = 'Cliquez un mur ou un sol, puis choisissez une peinture ou un matériau. <b>Toute la pièce</b> repeint tous les murs de la pièce d’un coup.'; return; }
   if (furnMode) { h.innerHTML = 'Cliquez un meuble ou un équipement : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Vue du dessus</b> aide à les placer. Portes et fenêtres se règlent avec <b>Ouvertures</b>.'; return; }
   if (wallMode && wmMode === 'tout') { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. <b>Une portion</b> ou <b>Un trou</b> pour ne casser qu’une partie. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
   if (wallMode) { h.innerHTML = 'Cliquez-glissez sur un mur (cloison ou mur extérieur) pour tracer la partie à casser. Une partie déjà cassée se déplace en la faisant glisser. Les portes et fenêtres touchées sont englobées.'; return; }
@@ -2145,7 +2729,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { PW, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
+window.__maison = { PW, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
