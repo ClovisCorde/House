@@ -97,21 +97,21 @@ select#goto {
 #hud dt { color: var(--muted); }
 #hud dd { margin: 0; }
 
-#wallpanel {
+#wallpanel, #furnpanel {
   top: calc(env(safe-area-inset-top, 0px) + 126px); left: max(16px, env(safe-area-inset-left, 0px));
   padding: 12px 14px; display: grid; gap: 10px; width: min(330px, calc(100% - 32px));
 }
-#wallpanel .lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-#wallpanel strong { font-family: var(--font-display); font-size: 17px; line-height: 1.2; display: block; }
-#wallpanel .meta { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
-#wallpanel .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-#wallpanel .sep { border-top: 1px solid var(--line); padding-top: 10px; }
-#wallpanel .tool { border-color: var(--line); padding: 8px 11px; }
-#wallpanel .tool:disabled { opacity: 0.45; cursor: default; }
+#furnpanel .lvl, #wallpanel .lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+#furnpanel strong, #wallpanel strong { font-family: var(--font-display); font-size: 17px; line-height: 1.2; display: block; }
+#furnpanel .meta, #wallpanel .meta { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+#furnpanel .row, #wallpanel .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#furnpanel .sep, #wallpanel .sep { border-top: 1px solid var(--line); padding-top: 10px; }
+#furnpanel .tool, #wallpanel .tool { border-color: var(--line); padding: 8px 11px; }
+#furnpanel .tool:disabled, #wallpanel .tool:disabled { opacity: 0.45; cursor: default; }
 .tool.danger { background: var(--measure); color: #fff; border-color: transparent; }
 .tool.danger:hover { background: var(--measure); filter: brightness(1.08); }
-#wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
-@media (max-width: 640px) { #wallpanel { top: calc(env(safe-area-inset-top, 0px) + 168px); } }
+#fp-count, #wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
+@media (max-width: 640px) { #furnpanel, #wallpanel { top: calc(env(safe-area-inset-top, 0px) + 168px); } }
 #help {
   left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding: 9px 13px; font-size: 12.5px; color: var(--muted); max-width: min(420px, calc(100% - 32px)); line-height: 1.45;
@@ -210,6 +210,7 @@ select#goto {
     <button id="measure" class="tool" aria-pressed="false">Mesurer</button>
     <button id="clear" class="tool" hidden>Effacer</button>
     <button id="wallmode" class="tool" aria-pressed="false">Casser un mur</button>
+    <button id="furnmode" class="tool" aria-pressed="false">Meubles</button>
   </div>
 </div>
 
@@ -227,6 +228,24 @@ select#goto {
     <span id="wp-count">Plan d’origine</span>
     <button id="wp-undo" class="tool" disabled>Annuler</button>
     <button id="wp-reset" class="tool" disabled>Revenir au plan d’origine</button>
+  </div>
+</aside>
+<aside id="furnpanel" class="ui panel" hidden aria-live="polite">
+  <div>
+    <span class="lvl" id="fp-lvl">Aucun meuble sélectionné</span>
+    <strong id="fp-name">Cliquez un meuble</strong>
+    <span class="meta" id="fp-meta">Ensuite, faites-le glisser pour le déplacer.</span>
+  </div>
+  <div class="row">
+    <button id="fp-rot90" class="tool" disabled>Tourner 90°</button>
+    <button id="fp-rot15" class="tool" disabled>Tourner 15°</button>
+    <button id="fp-del" class="tool danger" disabled>Supprimer</button>
+  </div>
+  <div class="row"><button id="fp-top" class="tool">Vue du dessus</button></div>
+  <div class="row sep">
+    <span id="fp-count">Meubles d’origine</span>
+    <button id="fp-undo" class="tool" disabled>Annuler</button>
+    <button id="fp-reset" class="tool" disabled>Tout remettre</button>
   </div>
 </aside>
 <aside id="hud" class="ui panel" hidden aria-live="polite">
@@ -315,13 +334,16 @@ scene.fog = new THREE.Fog(0xcfdbe6, 40, 90);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 
-const hemi = new THREE.HemisphereLight(0xf2f5fa, 0x8c7b66, 1.1);
+const hemi = new THREE.HemisphereLight(0xf4f6fa, 0x9a8a76, 1.25);
 scene.add(hemi);
 const envTex = scene.environment;
 let baked = false;
 const sun = new THREE.DirectionalLight(0xfff2e0, 1.6);
 sun.position.copy(b2t(W + 12, D + 18, 22));
 scene.add(sun);
+const fill = new THREE.DirectionalLight(0xe8eef5, 0.7);
+fill.position.copy(b2t(-12, -14, 10));
+scene.add(fill);
 const headLamp = new THREE.PointLight(0xfff1dc, 0, 7, 1.6);   // lampe qui suit le visiteur a l'interieur
 scene.add(headLamp);
 
@@ -416,6 +438,22 @@ function onModel(gltf) {
       const box = new THREE.Box3().setFromObject(node);
       const len = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       walls[k] = { key: k, node, col, base, level: k.split('_')[1], name: WALL_NAMES[base] || base, len, removed: false };
+    } else if (k.startsWith('Meuble_')) {
+      const box = new THREE.Box3().setFromObject(node);
+      const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
+      const pivot = new THREE.Group();
+      pivot.position.set(cx, 0, cz);
+      node.parent.add(pivot);
+      pivot.attach(node);
+      const g = mergeGeometries(list, false); g.translate(-cx, 0, -cz); g.computeBoundsTree();
+      const col = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+      col.visible = false;
+      pivot.add(col);
+      pivot.updateMatrixWorld(true);
+      const level = k.split('_')[1], id = k.split('_').slice(2).join('_');
+      furn[k] = { key: k, node, pivot, col, level, id, name: furnLabel(id), floorY: LVZ[level === 'RDC' ? 0 : 1],
+        home: { x: cx, z: cz }, x: cx, z: cz, rot: 0, removed: false,
+        w: box.max.x - box.min.x, d: box.max.z - box.min.z };
     } else geos.push(...list);
   }
   // garde-fous invisibles autour de la tremie des combles (non amenages, pas de garde-corps dans le modele)
@@ -431,19 +469,24 @@ function onModel(gltf) {
   collider = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
   collider.updateMatrixWorld(true);
   document.getElementById('loading').hidden = true;
-  applyLightmaps().catch((e) => console.warn('Eclairage precalcule indisponible, eclairage simple utilise', e));
+  if (USE_LIGHTMAPS) applyLightmaps().catch((e) => console.warn('Eclairage precalcule indisponible, eclairage simple utilise', e));
   restoreWalls();
+  restoreFurn();
   applyCut('all');
   setHelp();
   loop();
 }
 
 // ---------------------------------------------------------------- eclairage precalcule dans Blender (lightmaps)
+// Phase de travail : eclairage simple en direct (rien a recalculer quand on modifie). Le precalcul reviendra pour la version finale.
+const USE_LIGHTMAPS = false;
 const LM_SCALE = Math.PI / 0.28;   // energie divisee par 0,28 a la cuisson pour tenir en 8 bits
 async function applyLightmaps() {
   const tl = new THREE.TextureLoader();
   const entries = Object.entries(groups).filter(([k]) => k !== 'Vitrages');
-  const texs = await Promise.all(entries.map(([k]) => tl.loadAsync(`lightmaps/lm_${k}.jpg`)));
+  const lmName = (k) => (k.startsWith('Meuble_') ? `Meubles_${k.split('_')[1]}` : k);
+  const cache = {};
+  const texs = await Promise.all(entries.map(([k]) => (cache[lmName(k)] ??= tl.loadAsync(`lightmaps/lm_${lmName(k)}.jpg`))));
   entries.forEach(([, g], i) => {
     const t = texs[i];
     t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.channel = 1; t.anisotropy = 4; t.needsUpdate = true;
@@ -473,7 +516,8 @@ function applyCut(c) {
   const hide = mode === 'visite' ? [] : CUTS[c];
   for (const [k, g] of Object.entries(groups)) {
     const w = walls[k];
-    g.visible = w ? !w.removed && !hide.includes(w.level) : !hide.includes(k);
+    const f = furn[k];
+    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? !f.removed && !hide.includes(f.level) : !hide.includes(k);
   }
   if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
   for (const b of document.querySelectorAll('[data-cut]')) b.setAttribute('aria-pressed', String(b.dataset.cut === String(c)));
@@ -522,6 +566,7 @@ function castFirst(origin, dir, far) {
   ray.set(origin, dir); ray.far = far;
   const targets = collider ? [collider] : [];
   for (const w of Object.values(walls)) if (!w.removed) targets.push(w.col);
+  for (const f of Object.values(furn)) if (!f.removed) targets.push(f.col);
   const hits = ray.intersectObjects(targets, false);
   return hits.length ? hits[0] : null;
 }
@@ -598,7 +643,7 @@ canvas.addEventListener('pointerdown', (e) => {
   if (mode === 'visite') canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (!drag || drag.id !== e.pointerId || mode !== 'visite') return;
+  if (!drag || drag.id !== e.pointerId || mode !== 'visite' || furnDrag) return;
   const k = isTouch ? 0.006 : 0.0045;
   walker.yaw -= (e.clientX - drag.x) * k;
   walker.pitch = Math.max(-1.3, Math.min(1.3, walker.pitch - (e.clientY - drag.y) * k));
@@ -609,6 +654,7 @@ canvas.addEventListener('pointerup', (e) => {
   const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
   if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
   if (moved < 6 && wallMode) pickWall(e.clientX, e.clientY);
+  if (moved < 6 && furnMode) pickFurn(e.clientX, e.clientY);
   drag = null;
 });
 canvas.addEventListener('pointercancel', () => { drag = null; });
@@ -778,6 +824,7 @@ function toggleWallMode(on) {
   wp.panel.hidden = !on;
   if (!on) select(null);
   if (on && measuring) btnMeasure.click();
+  if (on && furnMode) toggleFurnMode(false);
   renderPanel(); setHelp();
 }
 btnWall.addEventListener('click', () => toggleWallMode(!wallMode));
@@ -785,6 +832,161 @@ wp.brk.addEventListener('click', () => { if (!selWall) return; const w = selWall
 wp.desel.addEventListener('click', () => select(null));
 wp.undo.addEventListener('click', () => { const k = removedOrder[removedOrder.length - 1]; if (k) { setRemoved(walls[k], false); save(); renderPanel(); } });
 wp.reset.addEventListener('click', () => { for (const k of [...removedOrder]) setRemoved(walls[k], false); save(); renderPanel(); });
+
+// ---------------------------------------------------------------- outil "meubles" (supprimer, deplacer, tourner)
+const furn = {};
+const FURN_LABELS = {
+  radiateur_sejour: 'Radiateur', cuisiniere: 'Cuisinière à bois', gaziniere: 'Gazinière', commode: 'Commode et télé',
+  horloge: 'Horloge', frigo: 'Frigo', buffet: 'Buffet', desserte: 'Desserte', table_sam: 'Table', chaise: 'Chaise',
+  evier: 'Évier sur meuble', ballon: 'Ballon d’eau chaude', radiateur_cuisine: 'Radiateur', etagere: 'Étagère',
+  armoire_cuisine: 'Armoire en noyer', baignoire: 'Baignoire', bidet: 'Bidet', lavabo: 'Lavabo',
+  armoire_miroir: 'Armoire de toilette', wc: 'WC', table_ronde: 'Table ronde', chaise_paille: 'Chaise paillée',
+  meuble_bas: 'Meuble bas', lit_ch4: 'Lit', armoire_ch4: 'Armoire', chevet_ch4: 'Table de chevet', lit_ch1: 'Lit',
+  chevet_ch1: 'Table de chevet', armoire_ch1: 'Armoire vitrée',
+};
+function furnLabel(id) { return FURN_LABELS[id] || FURN_LABELS[id.replace(/_\d+$/, '')] || id; }
+const FSTORE = 'maison-meubles';
+let furnMode = false, selFurn = null, furnDrag = null;
+const furnHist = [];
+const fp = {
+  panel: document.getElementById('furnpanel'), lvl: document.getElementById('fp-lvl'), name: document.getElementById('fp-name'),
+  meta: document.getElementById('fp-meta'), r90: document.getElementById('fp-rot90'), r15: document.getElementById('fp-rot15'),
+  del: document.getElementById('fp-del'), count: document.getElementById('fp-count'), undo: document.getElementById('fp-undo'),
+  reset: document.getElementById('fp-reset'),
+};
+const btnFurn = document.getElementById('furnmode');
+const snap = (f) => ({ x: f.x, z: f.z, rot: f.rot, removed: f.removed });
+const changed = (f) => f.removed || Math.abs(f.x - f.home.x) > 0.005 || Math.abs(f.z - f.home.z) > 0.005 || Math.abs(f.rot) > 1e-3;
+function applyFurn(f) {
+  f.pivot.position.set(f.x, 0, f.z);
+  f.pivot.rotation.y = f.rot;
+  f.pivot.updateMatrixWorld(true);
+}
+function setFurnGlow(f, on) {
+  f.node.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material.emissive?.setHex(on ? 0x2b6cd1 : 0x000000);
+    o.material.emissiveIntensity = on ? 0.4 : 1;
+  });
+}
+function selectFurn(f) {
+  if (selFurn) setFurnGlow(selFurn, false);
+  selFurn = f;
+  if (f) setFurnGlow(f, true);
+  renderFurnPanel();
+}
+function renderFurnPanel() {
+  const f = selFurn;
+  if (f) {
+    fp.lvl.textContent = `Meuble · ${LEVEL_LABEL[f.level]}`;
+    fp.name.textContent = f.name;
+    fp.meta.textContent = `${f.w.toFixed(2).replace('.', ',')} × ${f.d.toFixed(2).replace('.', ',')} m au sol. Glissez-le pour le déplacer.`;
+  } else {
+    fp.lvl.textContent = 'Aucun meuble sélectionné';
+    fp.name.textContent = 'Cliquez un meuble';
+    fp.meta.textContent = 'Ensuite, faites-le glisser pour le déplacer.';
+  }
+  for (const b of [fp.r90, fp.r15, fp.del]) b.disabled = !f;
+  const n = Object.values(furn).filter(changed).length;
+  fp.count.textContent = n ? `${n} meuble${n > 1 ? 's' : ''} modifié${n > 1 ? 's' : ''}` : 'Meubles d’origine';
+  fp.undo.disabled = !furnHist.length; fp.reset.disabled = !n;
+}
+function saveFurn() {
+  const out = {};
+  for (const f of Object.values(furn)) if (changed(f)) out[f.key] = snap(f);
+  try { localStorage.setItem(FSTORE, JSON.stringify(out)); } catch (e) { /* stockage indisponible */ }
+}
+function restoreFurn() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FSTORE) || '{}'); } catch (e) { saved = {}; }
+  for (const [k, st] of Object.entries(saved)) { const f = furn[k]; if (f) { Object.assign(f, st); applyFurn(f); } }
+  renderFurnPanel();
+}
+function record(f) { furnHist.push({ key: f.key, st: snap(f) }); if (furnHist.length > 200) furnHist.shift(); }
+function commit() { saveFurn(); applyCut(mode === 'maquette' ? cut : 'all'); renderFurnPanel(); }
+function rayAt(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera); ray.far = 200;
+}
+function furnUnder(cx, cy) {
+  rayAt(cx, cy);
+  // on vise les meubles en priorite, meme derriere un mur exterieur en vue Maquette
+  const hits = ray.intersectObjects(Object.values(furn).filter((f) => !f.removed && f.node.visible).map((f) => f.node), true);
+  for (const h of hits.slice(0, 1)) {
+    let o = h.object;
+    while (o && !furn[o.name?.replace(/\.\d+$/, '')]) o = o.parent;
+    if (o) return furn[o.name.replace(/\.\d+$/, '')];
+  }
+  return null;
+}
+function pickFurn(cx, cy) {
+  const f = furnUnder(cx, cy);
+  if (f) { selectFurn(f); return; }
+  selectFurn(null);
+  fp.name.textContent = 'Ce n’est pas un meuble';
+  fp.meta.textContent = 'Les murs, sols et équipements fixes ne bougent pas.';
+}
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), dragHit = new THREE.Vector3();
+canvas.addEventListener('pointerdown', (e) => {
+  if (!furnMode || !selFurn || e.button > 0) return;
+  if (furnUnder(e.clientX, e.clientY) !== selFurn) return;
+  dragPlane.constant = -selFurn.floorY;
+  if (!ray.ray.intersectPlane(dragPlane, dragHit)) return;
+  e.stopImmediatePropagation();               // ni orbite ni regard pendant le deplacement
+  record(selFurn);
+  furnDrag = { id: e.pointerId, ox: selFurn.x - dragHit.x, oz: selFurn.z - dragHit.z, moved: false };
+  canvas.setPointerCapture(e.pointerId);
+}, { capture: true });
+canvas.addEventListener('pointermove', (e) => {
+  if (!furnDrag || furnDrag.id !== e.pointerId) return;
+  rayAt(e.clientX, e.clientY);
+  if (!ray.ray.intersectPlane(dragPlane, dragHit)) return;
+  // reste a l'interieur de la maison
+  selFurn.x = Math.min(W - 0.15, Math.max(0.15, dragHit.x + furnDrag.ox));
+  selFurn.z = Math.min(-0.15, Math.max(-(D - 0.15), dragHit.z + furnDrag.oz));
+  furnDrag.moved = true;
+  applyFurn(selFurn);
+});
+const endFurnDrag = (e) => {
+  if (!furnDrag || furnDrag.id !== e.pointerId) return;
+  if (!furnDrag.moved) furnHist.pop();
+  furnDrag = null;
+  commit();
+};
+canvas.addEventListener('pointerup', endFurnDrag);
+canvas.addEventListener('pointercancel', endFurnDrag);
+function toggleFurnMode(on) {
+  furnMode = on;
+  btnFurn.setAttribute('aria-pressed', String(on));
+  fp.panel.hidden = !on;
+  if (!on) selectFurn(null);
+  if (on && measuring) btnMeasure.click();
+  if (on && wallMode) toggleWallMode(false);
+  renderFurnPanel(); setHelp();
+}
+btnFurn.addEventListener('click', () => toggleFurnMode(!furnMode));
+document.getElementById('fp-top').addEventListener('click', () => {
+  // vue en plan de l'etage du meuble selectionne (ou du RDC), pour deplacer facilement
+  const lvl = selFurn ? (selFurn.level === 'RDC' ? 0 : 1) : (cut === '1' ? 1 : 0);
+  if (mode !== 'maquette') setMode('maquette');
+  applyCut(String(lvl));
+  orbit.target.copy(b2t(W / 2, D / 2, LVZ[lvl]));
+  camera.position.copy(b2t(W / 2, D / 2 - 0.01, LVZ[lvl] + 13));
+  orbit.update();
+});
+const rotate = (a) => { if (!selFurn) return; record(selFurn); selFurn.rot = (selFurn.rot + a) % (Math.PI * 2); applyFurn(selFurn); commit(); };
+fp.r90.addEventListener('click', () => rotate(Math.PI / 2));
+fp.r15.addEventListener('click', () => rotate(Math.PI / 12));
+fp.del.addEventListener('click', () => { if (!selFurn) return; const f = selFurn; record(f); selectFurn(null); f.removed = true; commit(); });
+fp.undo.addEventListener('click', () => {
+  const h = furnHist.pop(); if (!h) return;
+  const f = furn[h.key]; Object.assign(f, h.st); applyFurn(f); commit();
+});
+fp.reset.addEventListener('click', () => {
+  for (const f of Object.values(furn)) if (changed(f)) { record(f); Object.assign(f, { x: f.home.x, z: f.home.z, rot: 0, removed: false }); applyFurn(f); }
+  commit();
+});
 
 // ---------------------------------------------------------------- outil de mesure
 let measuring = false;
@@ -797,6 +999,7 @@ btnMeasure.addEventListener('click', () => {
   btnMeasure.setAttribute('aria-pressed', String(measuring));
   btnMeasure.textContent = measuring ? 'Mesure active' : 'Mesurer';
   if (measuring && wallMode) toggleWallMode(false);
+  if (measuring && furnMode) toggleFurnMode(false);
   setHelp();
 });
 btnClear.addEventListener('click', () => {
@@ -832,6 +1035,7 @@ function addMeasurePoint(cx, cy) {
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
+  if (furnMode) { h.innerHTML = 'Cliquez un meuble, puis faites-le glisser pour le déplacer. Les boutons le tournent ou le suppriment. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de travailler d’en haut.'; return; }
   if (wallMode) { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
   if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
@@ -903,7 +1107,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]),
+window.__maison = { setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
