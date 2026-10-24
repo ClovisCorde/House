@@ -210,7 +210,7 @@ select#goto {
     <button id="measure" class="tool" aria-pressed="false">Mesurer</button>
     <button id="clear" class="tool" hidden>Effacer</button>
     <button id="wallmode" class="tool" aria-pressed="false">Casser un mur</button>
-    <button id="furnmode" class="tool" aria-pressed="false">Meubles</button>
+    <button id="furnmode" class="tool" aria-pressed="false">Éléments</button>
   </div>
 </div>
 
@@ -232,14 +232,18 @@ select#goto {
 </aside>
 <aside id="furnpanel" class="ui panel" hidden aria-live="polite">
   <div>
-    <span class="lvl" id="fp-lvl">Aucun meuble sélectionné</span>
-    <strong id="fp-name">Cliquez un meuble</strong>
-    <span class="meta" id="fp-meta">Ensuite, faites-le glisser pour le déplacer.</span>
+    <span class="lvl" id="fp-lvl">Aucun élément sélectionné</span>
+    <strong id="fp-name">Cliquez un meuble, une porte ou une fenêtre</strong>
+    <span class="meta" id="fp-meta">Tout peut être supprimé ; les meubles se déplacent en les faisant glisser.</span>
   </div>
   <div class="row">
-    <button id="fp-rot90" class="tool" disabled>Tourner 90°</button>
-    <button id="fp-rot15" class="tool" disabled>Tourner 15°</button>
-    <button id="fp-del" class="tool danger" disabled>Supprimer</button>
+    <button id="fp-move" class="tool" hidden>Déplacer</button>
+    <button id="fp-rot90" class="tool" hidden>Tourner 90°</button>
+    <button id="fp-rot15" class="tool" hidden>Tourner 15°</button>
+    <button id="fp-open" class="tool" hidden>Enlever la menuiserie</button>
+    <button id="fp-wall" class="tool" hidden>Murer l’ouverture</button>
+    <button id="fp-reopen" class="tool" hidden>Remettre la fenêtre</button>
+    <button id="fp-del" class="tool danger" hidden>Supprimer</button>
   </div>
   <div class="row"><button id="fp-top" class="tool">Vue du dessus</button></div>
   <div class="row sep">
@@ -304,7 +308,7 @@ const ROOMS = [
   { name: 'Salle à manger', lvl: 0, r: [5.48, 9.08, 2.96, 6.80], hsp: '2,74 m', dims: '3,57 × 3,84 m', spawn: [6.0, 4.3], look: [1, 0.5] },
   { name: 'Cuisine', lvl: 0, r: [5.48, 9.08, 0, 2.89], hsp: '2,74 m', dims: '3,64 × 2,95 m', spawn: [8.2, 2.5], look: [-0.6, -1] },
   { name: 'Local 1', lvl: 0, r: [0, 3.50, 0, 2.89], hsp: '2,58 m', dims: '3,45 × 2,83 m', spawn: [3.0, 2.4], look: [-1, -0.6] },
-  { name: "Salle d'eau", lvl: 0, r: [3.57, 5.41, 0, 1.42], hsp: '2,58 m', dims: '1,83 m de large', spawn: [4.3, 1.15], look: [0.2, -1] },
+  { name: "Salle d'eau", lvl: 0, r: [3.57, 5.41, 0, 1.42], hsp: '2,58 m', dims: '1,83 m de large', spawn: [3.85, 1.1], look: [0.4, -1] },
   { name: 'WC', lvl: 0, r: [4.56, 5.41, 1.49, 2.89], hsp: 'sous l’escalier' },
   { name: 'Chambre 2', lvl: 1, r: [0, 3.50, 2.96, 6.80], hsp: '2,60 m', dims: '3,58 × 3,84 m', spawn: [3.1, 4.6], look: [-1, 0.5] },
   { name: 'Chambre 1', lvl: 1, r: [0, 3.50, 0, 2.89], hsp: '2,65 m', dims: '3,58 × 2,88 m', spawn: [2.75, 0.5], look: [-1, 0.6] },
@@ -453,8 +457,9 @@ function onModel(gltf) {
       pivot.add(col);
       pivot.updateMatrixWorld(true);
       const level = k.split('_')[1], id = k.split('_').slice(2).join('_');
-      furn[k] = { key: k, node, pivot, col, level, id, name: furnLabel(id), floorY: LVZ[level === 'RDC' ? 0 : 1],
-        home: { x: cx, z: cz }, x: cx, z: cz, rot: 0, removed: false,
+      const type = furnType(id), hidden = type === 'bouchon';
+      furn[k] = { key: k, node, pivot, col, level, id, type, name: furnLabel(id), floorY: LVZ[level === 'RDC' ? 0 : 1],
+        home: { x: cx, z: cz, removed: hidden }, x: cx, z: cz, rot: 0, removed: hidden,
         w: box.max.x - box.min.x, d: box.max.z - box.min.z };
     } else geos.push(...list);
   }
@@ -519,7 +524,7 @@ function applyCut(c) {
   for (const [k, g] of Object.entries(groups)) {
     const w = walls[k];
     const f = furn[k];
-    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? !f.removed && !hide.includes(f.level) : !hide.includes(k);
+    g.visible = w ? !w.removed && !hide.includes(w.level) : f ? present(f) && !hide.includes(f.level) : !hide.includes(k);
   }
   if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
   for (const b of document.querySelectorAll('[data-cut]')) b.setAttribute('aria-pressed', String(b.dataset.cut === String(c)));
@@ -568,7 +573,7 @@ function castFirst(origin, dir, far) {
   ray.set(origin, dir); ray.far = far;
   const targets = collider ? [collider] : [];
   for (const w of Object.values(walls)) if (!w.removed) targets.push(w.col);
-  for (const f of Object.values(furn)) if (!f.removed) targets.push(f.col);
+  for (const f of Object.values(furn)) if (present(f)) targets.push(f.col);
   const hits = ray.intersectObjects(targets, false);
   return hits.length ? hits[0] : null;
 }
@@ -656,7 +661,7 @@ canvas.addEventListener('pointerup', (e) => {
   const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
   if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
   if (moved < 6 && wallMode) pickWall(e.clientX, e.clientY);
-  if (moved < 6 && furnMode) pickFurn(e.clientX, e.clientY);
+  if (moved < 6 && furnMode && !furnDrag) pickFurn(e.clientX, e.clientY);
   drag = null;
 });
 canvas.addEventListener('pointercancel', () => { drag = null; });
@@ -835,7 +840,7 @@ wp.desel.addEventListener('click', () => select(null));
 wp.undo.addEventListener('click', () => { const k = removedOrder[removedOrder.length - 1]; if (k) { setRemoved(walls[k], false); save(); renderPanel(); } });
 wp.reset.addEventListener('click', () => { for (const k of [...removedOrder]) setRemoved(walls[k], false); save(); renderPanel(); });
 
-// ---------------------------------------------------------------- outil "meubles" (supprimer, deplacer, tourner)
+// ---------------------------------------------------------------- outil "elements" : meubles, equipements, portes, fenetres
 const furn = {};
 const FURN_LABELS = {
   radiateur_sejour: 'Radiateur', cuisiniere: 'Cuisinière à bois', gaziniere: 'Gazinière', commode: 'Commode et télé',
@@ -844,21 +849,52 @@ const FURN_LABELS = {
   armoire_cuisine: 'Armoire en noyer', baignoire: 'Baignoire', bidet: 'Bidet', lavabo: 'Lavabo',
   armoire_miroir: 'Armoire de toilette', wc: 'WC', table_ronde: 'Table ronde', chaise_paille: 'Chaise paillée',
   meuble_bas: 'Meuble bas', lit_ch4: 'Lit', armoire_ch4: 'Armoire', chevet_ch4: 'Table de chevet', lit_ch1: 'Lit',
-  chevet_ch1: 'Table de chevet', armoire_ch1: 'Armoire vitrée',
+  chevet_ch1: 'Table de chevet', armoire_ch1: 'Armoire vitrée', cheminee: 'Cheminée', credence: 'Crédence',
+  placard: 'Placard à portes miroir',
 };
-function furnLabel(id) { return FURN_LABELS[id] || FURN_LABELS[id.replace(/_\d+$/, '')] || id; }
-const FSTORE = 'maison-meubles';
+const ROOM_LABELS = {
+  sejour: 'séjour', entree: 'entrée', salle_a_manger: 'salle à manger', local_1: 'local 1', salle_d_eau: 'salle d’eau',
+  cuisine: 'cuisine', chambre_1: 'chambre 1', chambre_2: 'chambre 2', chambre_3: 'chambre 3', chambre_4: 'chambre 4',
+  dressing: 'dressing', degagement: 'dégagement',
+};
+const DOOR_ROOM = { sejour: 'séjour', local: 'local 1', sam: 'salle à manger', cuisine: 'cuisine', sde: 'salle d’eau', wc: 'WC',
+  ch1: 'chambre 1', ch2: 'chambre 2', ch3: 'chambre 3', ch4: 'chambre 4', dressing: 'dressing' };
+// porte interieure -> cloison qui la porte (si la cloison est abattue, la porte part avec)
+const DOOR_WALL = { sejour: 'Cl_sejour_entree', local: 'Cl_local_couloir', sam: 'Cl_entree_sam', cuisine: 'Cl_sam_cuisine',
+  sde: 'Cl_sde', wc: 'Cl_wc_gauche', ch2: 'Cl_ch2_deg', ch1: 'Cl_ch1_deg', ch3: 'Cl_deg_ch3', ch4: 'Cl_deg_ch4', dressing: 'Cl_dressing' };
+function furnType(id) {
+  if (id.startsWith('ouv_')) return 'ouverture';
+  if (id.startsWith('bouchon_')) return 'bouchon';
+  if (id.startsWith('porte_')) return 'porte';
+  return 'meuble';
+}
+function furnLabel(id) {
+  if (id === 'ouv_entree') return 'Porte d’entrée';
+  if (id.startsWith('ouv_')) return `Fenêtre · ${ROOM_LABELS[id.slice(4)] || id.slice(4)}`;
+  if (id.startsWith('porte_')) return `Porte · ${DOOR_ROOM[id.slice(6)] || id.slice(6)}`;
+  return FURN_LABELS[id] || FURN_LABELS[id.replace(/_\d+$/, '')] || id;
+}
+const FSTORE = 'maison-elements';
 let furnMode = false, selFurn = null, furnDrag = null;
 const furnHist = [];
 const fp = {
   panel: document.getElementById('furnpanel'), lvl: document.getElementById('fp-lvl'), name: document.getElementById('fp-name'),
-  meta: document.getElementById('fp-meta'), r90: document.getElementById('fp-rot90'), r15: document.getElementById('fp-rot15'),
-  del: document.getElementById('fp-del'), count: document.getElementById('fp-count'), undo: document.getElementById('fp-undo'),
-  reset: document.getElementById('fp-reset'),
+  meta: document.getElementById('fp-meta'), move: document.getElementById('fp-move'), r90: document.getElementById('fp-rot90'),
+  r15: document.getElementById('fp-rot15'), del: document.getElementById('fp-del'), open: document.getElementById('fp-open'),
+  wall: document.getElementById('fp-wall'), reopen: document.getElementById('fp-reopen'),
+  count: document.getElementById('fp-count'), undo: document.getElementById('fp-undo'), reset: document.getElementById('fp-reset'),
 };
 const btnFurn = document.getElementById('furnmode');
 const snap = (f) => ({ x: f.x, z: f.z, rot: f.rot, removed: f.removed });
-const changed = (f) => f.removed || Math.abs(f.x - f.home.x) > 0.005 || Math.abs(f.z - f.home.z) > 0.005 || Math.abs(f.rot) > 1e-3;
+const changed = (f) => f.removed !== f.home.removed || Math.abs(f.x - f.home.x) > 0.005 || Math.abs(f.z - f.home.z) > 0.005 || Math.abs(f.rot) > 1e-3;
+const plugOf = (f) => furn[f.key.replace('_ouv_', '_bouchon_')];
+const openingOf = (b) => furn[b.key.replace('_bouchon_', '_ouv_')];
+function wallGone(f) {
+  if (f.type !== 'porte') return false;
+  const w = walls[`Mur_${f.level}_${DOOR_WALL[f.id.slice(6)]}`];
+  return !!(w && w.removed);
+}
+const present = (f) => !f.removed && !wallGone(f);
 function applyFurn(f) {
   f.pivot.position.set(f.x, 0, f.z);
   f.pivot.rotation.y = f.rot;
@@ -877,20 +913,35 @@ function selectFurn(f) {
   if (f) setFurnGlow(f, true);
   renderFurnPanel();
 }
+const fmt = (v) => v.toFixed(2).replace('.', ',');
 function renderFurnPanel() {
   const f = selFurn;
-  if (f) {
-    fp.lvl.textContent = `Meuble · ${LEVEL_LABEL[f.level]}`;
+  const show = (b, on) => { b.hidden = !on; b.disabled = false; };
+  for (const b of [fp.move, fp.r90, fp.r15, fp.del, fp.open, fp.wall, fp.reopen]) b.hidden = true;
+  if (!f) {
+    fp.lvl.textContent = 'Aucun élément sélectionné';
+    fp.name.textContent = 'Cliquez un meuble, une porte ou une fenêtre';
+    fp.meta.textContent = 'Tout peut être supprimé ; les meubles se déplacent en les faisant glisser.';
+  } else if (f.type === 'meuble') {
+    fp.lvl.textContent = `Meuble ou équipement · ${LEVEL_LABEL[f.level]}`;
     fp.name.textContent = f.name;
-    fp.meta.textContent = `${f.w.toFixed(2).replace('.', ',')} × ${f.d.toFixed(2).replace('.', ',')} m au sol. Glissez-le pour le déplacer.`;
+    fp.meta.textContent = `${fmt(f.w)} × ${fmt(f.d)} m au sol. Glissez-le pour le déplacer.`;
+    show(fp.r90, true); show(fp.r15, true); show(fp.del, true);
+  } else if (f.type === 'porte') {
+    fp.lvl.textContent = `Porte intérieure · ${LEVEL_LABEL[f.level]}`;
+    fp.name.textContent = f.name;
+    fp.meta.textContent = 'Supprimer enlève le vantail et l’huisserie ; le passage reste ouvert.';
+    show(fp.del, true);
   } else {
-    fp.lvl.textContent = 'Aucun meuble sélectionné';
-    fp.name.textContent = 'Cliquez un meuble';
-    fp.meta.textContent = 'Ensuite, faites-le glisser pour le déplacer.';
+    const plug = plugOf(f), walled = plug && !plug.removed;
+    fp.lvl.textContent = `${f.id === 'ouv_entree' ? 'Ouverture' : 'Fenêtre'} · ${LEVEL_LABEL[f.level]}`;
+    fp.name.textContent = f.name;
+    if (walled) { fp.meta.textContent = 'Ouverture murée.'; show(fp.reopen, true); }
+    else if (f.removed) { fp.meta.textContent = 'Menuiserie enlevée, l’ouverture reste vide.'; show(fp.wall, true); show(fp.reopen, true); }
+    else { fp.meta.textContent = `Ouverture de ${fmt(plug ? plug.w : f.w)} m de large.`; show(fp.open, true); show(fp.wall, true); }
   }
-  for (const b of [fp.r90, fp.r15, fp.del]) b.disabled = !f;
   const n = Object.values(furn).filter(changed).length;
-  fp.count.textContent = n ? `${n} meuble${n > 1 ? 's' : ''} modifié${n > 1 ? 's' : ''}` : 'Meubles d’origine';
+  fp.count.textContent = n ? `${n} élément${n > 1 ? 's' : ''} modifié${n > 1 ? 's' : ''}` : 'État d’origine';
   fp.undo.disabled = !furnHist.length; fp.reset.disabled = !n;
 }
 function saveFurn() {
@@ -904,7 +955,8 @@ function restoreFurn() {
   for (const [k, st] of Object.entries(saved)) { const f = furn[k]; if (f) { Object.assign(f, st); applyFurn(f); } }
   renderFurnPanel();
 }
-function record(f) { furnHist.push({ key: f.key, st: snap(f) }); if (furnHist.length > 200) furnHist.shift(); }
+// une entree d'historique = un geste, qui peut toucher plusieurs elements (fenetre + bouchon)
+function record(...fs) { furnHist.push(fs.filter(Boolean).map((f) => ({ key: f.key, st: snap(f) }))); if (furnHist.length > 200) furnHist.shift(); }
 function commit() { saveFurn(); applyCut(mode === 'maquette' ? cut : 'all'); renderFurnPanel(); }
 function rayAt(cx, cy) {
   const r = canvas.getBoundingClientRect();
@@ -913,12 +965,12 @@ function rayAt(cx, cy) {
 }
 function furnUnder(cx, cy) {
   rayAt(cx, cy);
-  // on vise les meubles en priorite, meme derriere un mur exterieur en vue Maquette
-  const hits = ray.intersectObjects(Object.values(furn).filter((f) => !f.removed && f.node.visible).map((f) => f.node), true);
+  // on vise les elements en priorite, meme derriere un mur exterieur en vue Maquette
+  const hits = ray.intersectObjects(Object.values(furn).filter((f) => present(f) && f.node.visible).map((f) => f.node), true);
   for (const h of hits.slice(0, 1)) {
     let o = h.object;
     while (o && !furn[o.name?.replace(/\.\d+$/, '')]) o = o.parent;
-    if (o) return furn[o.name.replace(/\.\d+$/, '')];
+    if (o) { const f = furn[o.name.replace(/\.\d+$/, '')]; return f.type === 'bouchon' ? openingOf(f) : f; }
   }
   return null;
 }
@@ -926,12 +978,12 @@ function pickFurn(cx, cy) {
   const f = furnUnder(cx, cy);
   if (f) { selectFurn(f); return; }
   selectFurn(null);
-  fp.name.textContent = 'Ce n’est pas un meuble';
-  fp.meta.textContent = 'Les murs, sols et équipements fixes ne bougent pas.';
+  fp.name.textContent = 'Rien à modifier ici';
+  fp.meta.textContent = 'Visez un meuble, une porte ou une fenêtre. Les cloisons se cassent avec « Casser un mur ».';
 }
 const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), dragHit = new THREE.Vector3();
 canvas.addEventListener('pointerdown', (e) => {
-  if (!furnMode || !selFurn || e.button > 0) return;
+  if (!furnMode || !selFurn || selFurn.type !== 'meuble' || e.button > 0) return;
   if (furnUnder(e.clientX, e.clientY) !== selFurn) return;
   dragPlane.constant = -selFurn.floorY;
   if (!ray.ray.intersectPlane(dragPlane, dragHit)) return;
@@ -969,7 +1021,7 @@ function toggleFurnMode(on) {
 }
 btnFurn.addEventListener('click', () => toggleFurnMode(!furnMode));
 document.getElementById('fp-top').addEventListener('click', () => {
-  // vue en plan de l'etage du meuble selectionne (ou du RDC), pour deplacer facilement
+  // vue en plan de l'etage de l'element selectionne (ou du RDC), pour deplacer facilement
   const lvl = selFurn ? (selFurn.level === 'RDC' ? 0 : 1) : (cut === '1' ? 1 : 0);
   if (mode !== 'maquette') setMode('maquette');
   applyCut(String(lvl));
@@ -981,12 +1033,25 @@ const rotate = (a) => { if (!selFurn) return; record(selFurn); selFurn.rot = (se
 fp.r90.addEventListener('click', () => rotate(Math.PI / 2));
 fp.r15.addEventListener('click', () => rotate(Math.PI / 12));
 fp.del.addEventListener('click', () => { if (!selFurn) return; const f = selFurn; record(f); selectFurn(null); f.removed = true; commit(); });
+fp.open.addEventListener('click', () => { const f = selFurn; if (!f) return; record(f); f.removed = true; commit(); });
+fp.wall.addEventListener('click', () => {
+  const f = selFurn, plug = f && plugOf(f); if (!f) return;
+  record(f, plug); f.removed = true; if (plug) plug.removed = false; commit();
+});
+fp.reopen.addEventListener('click', () => {
+  const f = selFurn, plug = f && plugOf(f); if (!f) return;
+  record(f, plug); f.removed = false; if (plug) plug.removed = true; commit();
+});
 fp.undo.addEventListener('click', () => {
   const h = furnHist.pop(); if (!h) return;
-  const f = furn[h.key]; Object.assign(f, h.st); applyFurn(f); commit();
+  for (const { key, st } of h) { const f = furn[key]; Object.assign(f, st); applyFurn(f); }
+  commit();
 });
 fp.reset.addEventListener('click', () => {
-  for (const f of Object.values(furn)) if (changed(f)) { record(f); Object.assign(f, { x: f.home.x, z: f.home.z, rot: 0, removed: false }); applyFurn(f); }
+  const ch = Object.values(furn).filter(changed);
+  if (!ch.length) return;
+  record(...ch);
+  for (const f of ch) { Object.assign(f, { x: f.home.x, z: f.home.z, rot: 0, removed: f.home.removed }); applyFurn(f); }
   commit();
 });
 
@@ -1037,7 +1102,7 @@ function addMeasurePoint(cx, cy) {
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
-  if (furnMode) { h.innerHTML = 'Cliquez un meuble, puis faites-le glisser pour le déplacer. Les boutons le tournent ou le suppriment. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de travailler d’en haut.'; return; }
+  if (furnMode) { h.innerHTML = 'Cliquez un meuble, un équipement, une porte ou une fenêtre. Les meubles se déplacent en les faisant glisser ; les fenêtres peuvent être enlevées ou murées. <b>Vue du dessus</b> aide à placer les meubles.'; return; }
   if (wallMode) { h.innerHTML = 'Cliquez une cloison pour la sélectionner, puis <b>Abattre ce mur</b>. En vue Maquette, <b>Afficher RDC</b> ou <b>1er</b> permet de viser d’en haut.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
   if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
