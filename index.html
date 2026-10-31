@@ -130,6 +130,10 @@ select#goto {
 .num span { color: var(--muted); font-size: 12px; }
 .num .tool { padding: 6px 10px; }
 .opmsg { margin: 0; font-size: 12.5px; color: var(--measure); }
+.btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.btnrow .tool { padding: 7px 9px; font-size: 12.5px; }
+.opgrid .lbl { color: var(--muted); }
+.tag.c { background: #1f5fbf; color: #fff; border-color: transparent; font-variant-numeric: tabular-nums; padding: 3px 7px; font-size: 12px; }
 #st-info { margin-top: 8px; color: var(--muted); line-height: 1.4; }
 #wallpanel .wp-modes { padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
 #wallpanel .wp-modes button { padding: 9px 6px; border: 1px solid var(--line); }
@@ -584,9 +588,12 @@ select#goto {
     <div class="num" id="op-zb-row"><button class="tool" data-k="zb" data-d="-5" aria-label="Descendre">−</button><input id="op-zb" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-k="zb" data-d="5" aria-label="Monter">+</button></div>
     <label for="op-u">Position</label>
     <div class="num"><button class="tool" data-k="u" data-d="-5" aria-label="Décaler d’un côté">−</button><input id="op-u" type="number" step="5" inputmode="numeric"><span>cm</span><button class="tool" data-k="u" data-d="5" aria-label="Décaler de l’autre côté">+</button></div>
+    <span id="op-sens-lbl" class="lbl">Sens</span>
+    <div id="op-sens" class="btnrow"><button class="tool" id="op-flip-side">Ouvrir de l’autre côté</button><button class="tool" id="op-flip-hinge">Inverser les charnières</button></div>
   </div>
   <div class="row">
     <button id="op-del" class="tool danger" hidden>Supprimer l’ouverture</button>
+    <button id="op-move" class="tool" hidden>Mettre sur un autre mur</button>
     <select id="op-add-type" hidden aria-label="Type d’ouverture à ajouter"></select>
     <button id="op-add" class="tool" hidden>Ajouter ici</button>
   </div>
@@ -1052,11 +1059,12 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerup', (e) => {
   if (!drag || drag.id !== e.pointerId) return;
   const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
+  const ouvClick = ouvMode && !ouvDrag;            // avant les clics qui peuvent changer d'outil (porte cliquee en Meubles)
   if (moved < 6 && measuring) addMeasurePoint(e.clientX, e.clientY);
   if (moved < 6 && wallMode && wmMode === 'tout') pickWall(e.clientX, e.clientY);
   if (moved < 6 && wallMode && wmMode === 'isoler') pickIso(e.clientX, e.clientY);
   if (moved < 6 && furnMode && !furnDrag) pickFurn(e.clientX, e.clientY);
-  if (moved < 6 && ouvMode && !ouvDrag) pickOuv(e.clientX, e.clientY);
+  if (moved < 6 && ouvClick) pickOuv(e.clientX, e.clientY);
   if (moved < 6 && finMode) pickFin(e.clientX, e.clientY);
   drag = null;
 });
@@ -1243,7 +1251,7 @@ function renderPanel(msg = '') {
     for (const id of ['wp-vant-lbl', 'wp-coul-lbl', 'wp-vant', 'wp-coul']) document.getElementById(id).hidden = !bv;
     wp.forme.hidden = !tr; wp.forme.value = o.forme || '';
     if (bv) { document.getElementById('wp-vant').value = String(o.vantaux || 2); document.getElementById('wp-coul').value = o.coul || 'anthracite'; }
-    wp.w.value = cm(o.w); wp.h.value = cm(o.zt - o.zb); wp.zb.value = cm(o.zb - d.floor); wp.u.value = cm(o.u - o.w / 2 - d.lim[0]);
+    wp.w.value = cm(o.w); wp.h.value = cm(o.zt - o.zb); wp.zb.value = cm(o.zb - d.floor); wp.u.value = cm(o.u - o.w / 2 - uStart(wpSel.w));
   } else {
     wp.lvl.textContent = wmMode === 'trou' ? 'Faire un trou' : wmMode === 'baie' ? 'Ouvrir une baie vitrée' : 'Casser une portion de mur';
     wp.name.textContent = wmMode === 'baie' ? 'Tracez-la sur un mur' : 'Tracez sur un mur la partie à casser';
@@ -1390,7 +1398,7 @@ const wpNum = (el, f) => el.addEventListener('change', () => { const v = parseFl
 wpNum(wp.w, (o, v) => { o.w = v; });
 wpNum(wp.h, (o, v) => { o.zt = o.zb + v; });
 wpNum(wp.zb, (o, v) => { const h = o.zt - o.zb; o.zb = wpSel.w.def.floor + v; o.zt = o.zb + h; });
-wpNum(wp.u, (o, v) => { o.u = wpSel.w.def.lim[0] + v + o.w / 2; });
+wpNum(wp.u, (o, v) => { o.u = uStart(wpSel.w) + v + o.w / 2; });
 for (const b of document.querySelectorAll('#wp-edit [data-wk]')) {
   b.addEventListener('click', () => {
     const k = b.dataset.wk, dv = parseFloat(b.dataset.d) / 100;
@@ -1544,9 +1552,19 @@ function furnUnder(cx, cy) {
 function pickFurn(cx, cy) {
   const f = furnUnder(cx, cy);
   if (f) { selectFurn(f); return; }
+  // une porte ou une fenetre : elle se regle dans l'outil Ouvertures, on y passe directement
+  const hit = wallHit(cx, cy);
+  const i = hit && hit.w.def.kind !== 'roof' ? opIndexAt(hit.w, hit.u, hit.z) : -1;
+  if (i >= 0 && !DRAWN(hit.w.ops[i].type) && hit.w.ops[i].type !== 'baie') {
+    const o = hit.w.ops[i];
+    toggleOuvMode(true);
+    selW = hit.w; selI = i; selSpot = { u: hit.u, z: hit.z };
+    renderOuvPanel(`${o.type === 'porte_int' ? 'Les portes' : 'Les portes et fenêtres'} se règlent ici : glissez-la le long du mur, mettez-la sur un autre mur ou supprimez-la.`);
+    return;
+  }
   selectFurn(null);
   fp.name.textContent = 'Rien à modifier ici';
-  fp.meta.textContent = 'Visez un meuble ou un équipement. Portes et fenêtres : outil Ouvertures. Cloisons : Murs.';
+  fp.meta.textContent = 'Visez un meuble ou un équipement. Cliquer une porte ou une fenêtre ouvre ses réglages. Cloisons : Murs.';
 }
 const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), dragHit = new THREE.Vector3();
 canvas.addEventListener('pointerdown', (e) => {
@@ -3026,7 +3044,7 @@ function removeNewWall(id) {
 function saveNeuf() { lsSet(NSTORE, Object.values(NEUF)); }
 
 // ---------------------------------------------------------------- editeur d'ouvertures
-let ouvMode = false, selW = null, selI = -1, selSpot = null, ouvDrag = null;
+let ouvMode = false, selW = null, selI = -1, selSpot = null, ouvDrag = null, ouvMove = null;
 const ouvHist = [];
 const op = {
   panel: document.getElementById('ouvpanel'), lvl: document.getElementById('op-lvl'), name: document.getElementById('op-name'),
@@ -3035,7 +3053,7 @@ const op = {
   zbRow: document.getElementById('op-zb-row'), del: document.getElementById('op-del'), add: document.getElementById('op-add'),
   forme: document.getElementById('op-forme'), formeLbl: document.getElementById('op-forme-lbl'),
   addType: document.getElementById('op-add-type'), count: document.getElementById('op-count'), undo: document.getElementById('op-undo'),
-  reset: document.getElementById('op-reset'), msg: document.getElementById('op-msg'),
+  reset: document.getElementById('op-reset'), msg: document.getElementById('op-msg'), move: document.getElementById('op-move'),
 };
 const btnOuv = document.getElementById('ouvmode');
 const cm = (v) => Math.round(v * 100);
@@ -3163,7 +3181,8 @@ function refreshOverlay() {
 }
 function renderOuvPanel(msg = '') {
   op.msg.textContent = msg; op.msg.hidden = !msg;
-  op.edit.hidden = true; op.del.hidden = true; op.add.hidden = true; op.addType.hidden = true;
+  op.edit.hidden = true; op.del.hidden = true; op.add.hidden = true; op.addType.hidden = true; op.move.hidden = true;
+  if (ouvMove && (!selW || selW !== ouvMove.w || selW.ops[selI] !== ouvMove.o)) ouvMove = null;
   if (!selW) {
     op.lvl.textContent = 'Aucun mur sélectionné';
     op.name.textContent = 'Cliquez une fenêtre, une porte ou un mur';
@@ -3181,13 +3200,20 @@ function renderOuvPanel(msg = '') {
       op.type.innerHTML = types.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
       op.type.value = o.type;
       op.w.value = cm(o.w); op.h.value = cm(o.zt - o.zb); op.zb.value = cm(o.zb - d.floor);
-      op.u.value = cm(o.u - o.w / 2 - d.lim[0]);
+      op.u.value = cm(o.u - o.w / 2 - uStart(selW));
       op.zbRow.hidden = (isDoor(o.type) && o.type !== 'baie') || o.type === 'breche' || (o.type === 'baie'); document.getElementById('op-zb-lbl').hidden = op.zbRow.hidden;
       const arc = o.type === 'trou' || o.type === 'baie';
       op.forme.hidden = !arc; op.formeLbl.hidden = !arc; op.forme.value = o.forme || '';
       const bv = o.type === 'baie_vitree';
       for (const id of ['op-vant-lbl', 'op-coul-lbl', 'op-vant', 'op-coul']) document.getElementById(id).hidden = !bv;
       if (bv) { document.getElementById('op-vant').value = String(o.vantaux || 2); document.getElementById('op-coul').value = o.coul || 'anthracite'; }
+      const door = o.type === 'porte_int';
+      for (const id of ['op-sens', 'op-sens-lbl']) document.getElementById(id).hidden = !door;
+      op.move.hidden = d.kind === 'roof' || DRAWN(o.type);
+      op.move.textContent = ouvMove ? 'Annuler le changement de mur' : 'Mettre sur un autre mur';
+      op.move.setAttribute('aria-pressed', String(!!ouvMove));
+      op.del.textContent = isDoor(o.type) && o.type !== 'baie' ? 'Supprimer la porte' : 'Supprimer l’ouverture';
+      if (ouvMove) op.meta.textContent = `Cliquez ${d.kind === 'int' ? 'la cloison' : 'le mur de façade'} où la mettre, à l’endroit voulu.`;
       const hasVol = d.kind === 'ext' && SHUT_T.includes(o.type);
       for (const id of ['op-vol', 'op-vol-lbl']) document.getElementById(id).hidden = !hasVol;
       if (hasVol) document.getElementById('op-vol').value = VT_OK.includes(o.vt) ? o.vt : '';
@@ -3223,10 +3249,41 @@ function opIndexAt(w, u, z) {
 }
 function pickOuv(cx, cy) {
   const hit = wallHit(cx, cy);
+  if (ouvMove) { moveToWall(ouvMove, hit); return; }
   if (!hit) { selW = null; selI = -1; renderOuvPanel(); return; }
   selW = hit.w; selI = opIndexAt(hit.w, hit.u, hit.z); selSpot = { u: hit.u, z: hit.z };
   renderOuvPanel();
 }
+// une porte (ou une fenetre) change de mur : on la pose a l'endroit clique, a la meme hauteur par rapport au sol
+function moveToWall(mv, hit) {
+  const src = mv.w, o0 = mv.o;
+  if (!hit || hit.w === src || hit.w.def.kind !== src.def.kind) {
+    renderOuvPanel(hit && hit.w === src ? 'Glissez-la plutôt le long de ce mur, ou cliquez un autre mur.' : `Cliquez ${src.def.kind === 'int' ? 'une autre cloison' : 'un autre mur de façade'}.`);
+    return;
+  }
+  const dst = hit.w, i = src.ops.indexOf(o0);
+  const g = snapshot(src.def.id, dst.def.id);
+  const o = { ...o0, u: hit.u, zb: dst.def.floor + (o0.zb - src.def.floor) };
+  o.zt = o.zb + (o0.zt - o0.zb);
+  src.ops.splice(i, 1); dst.ops.push(o);
+  const r = fitOpening(dst, o, dst.ops.length - 1);
+  if (!r.ok) {
+    for (const h of g) PW[h.id].ops = h.ops.map((q) => ({ ...q }));
+    ouvHist.pop(); ouvMove = { w: src, o: src.ops[i] };
+    renderOuvPanel(r.notes.join(' ') || 'Pas la place sur ce mur.'); return;
+  }
+  ouvMove = null;
+  rebuildWall(src.def.id); rebuildWall(dst.def.id); saveOuv();
+  selW = dst; selI = dst.ops.indexOf(o);
+  renderOuvPanel([`${TYPE_LABEL[o.type] || 'Ouverture'} déplacée sur ${wallLabel(dst.def)}.`, ...r.notes].join(' '));
+}
+op.move.addEventListener('click', () => {
+  if (!selW || selI < 0) return;
+  ouvMove = ouvMove ? null : { w: selW, o: selW.ops[selI] };
+  renderOuvPanel();
+});
+document.getElementById('op-flip-side').addEventListener('click', () => applyEdit((o) => { o.side = -(o.side || 1); }));
+document.getElementById('op-flip-hinge').addEventListener('click', () => applyEdit((o) => { o.hinge = -(o.hinge || -1); }));
 function applyEdit(mutator) {
   if (!selW || selI < 0) return;
   const r = editOp(selW, selI, mutator, 'ouv');
@@ -3247,7 +3304,7 @@ const numIn = (el, f) => el.addEventListener('change', () => { const v = parseFl
 numIn(op.w, (o, v) => { o.w = v; });
 numIn(op.h, (o, v) => { o.zt = o.zb + v; });
 numIn(op.zb, (o, v) => { const hgt = o.zt - o.zb; o.zb = selW.def.floor + v; o.zt = o.zb + hgt; });
-numIn(op.u, (o, v) => { o.u = selW.def.lim[0] + v + o.w / 2; });
+numIn(op.u, (o, v) => { o.u = uStart(selW) + v + o.w / 2; });
 for (const b of document.querySelectorAll('#op-edit [data-k]')) {
   b.addEventListener('click', () => {
     const k = b.dataset.k, dv = parseFloat(b.dataset.d) / 100;
@@ -3259,8 +3316,10 @@ for (const b of document.querySelectorAll('#op-edit [data-k]')) {
 op.del.addEventListener('click', () => {
   if (!selW || selI < 0) return;
   snapshot(selW.def.id);
+  const t = selW.ops[selI].type;
   selW.ops.splice(selI, 1); selI = -1;
-  rebuildWall(selW.def.id); saveOuv(); renderOuvPanel('Ouverture supprimée : le mur est refermé.');
+  rebuildWall(selW.def.id); saveOuv();
+  renderOuvPanel(t === 'porte_int' ? 'Porte supprimée : la cloison est rebouchée.' : 'Ouverture supprimée : le mur est refermé.');
 });
 op.add.addEventListener('click', () => {
   if (!selW || !selSpot) return;
@@ -3320,7 +3379,7 @@ canvas.addEventListener('pointermove', (e) => {
   ouvDrag.moved = true;
   rebuildWall(d.id, false);
   refreshOverlay();
-  op.u.value = cm(o.u - o.w / 2 - d.lim[0]); op.zb.value = cm(o.zb - d.floor);
+  op.u.value = cm(o.u - o.w / 2 - uStart(selW)); op.zb.value = cm(o.zb - d.floor);
 });
 const endOuvDrag = (e) => {
   if (!ouvDrag || ouvDrag.id !== e.pointerId) return;
@@ -4113,6 +4172,140 @@ function addMeasurePoint(cx, cy) {
 }
 
 
+
+// ---------------------------------------------------------------- cotes en direct : meuble, cloison ou ouverture selectionne
+// Calcul en plan : rayons horizontaux contre les murs du meme niveau (doublages compris, murs abattus et portions cassees exclus).
+const coteMat = new THREE.LineBasicMaterial({ color: 0x1f5fbf, depthTest: false, transparent: true });
+const coteLines = new THREE.LineSegments(new THREE.BufferGeometry(), coteMat);
+coteLines.renderOrder = 40; coteLines.frustumCulled = false; scene.add(coteLines);
+let coteTags = [], coteSig = '', coteSegs = [];
+const fmtCote = (v) => (v < 0.995 ? `${Math.round(v * 100)} cm` : `${v.toFixed(2).replace('.', ',')} m`);
+function wallRects(level, skip) {
+  const R = [];
+  for (const [id, w] of Object.entries(PW)) {
+    const d = w.def;
+    if (d.kind === 'roof' || d.level !== level || skip.has(id) || (walls[id] && walls[id].removed)) continue;
+    const push = (u0, u1, t0, t1) => { if (u1 - u0 > 0.005 && t1 - t0 > 0.001) R.push({ d, u0, u1, t0, t1 }); };
+    let u = d.a0;
+    for (const [c0, c1] of w.ops.filter((o) => o.type === 'breche').map((o) => [o.u - o.w / 2, o.u + o.w / 2]).sort((a, b) => a[0] - b[0])) { push(u, c0, d.tA, d.tB); u = Math.max(u, c1); }
+    push(u, d.a1, d.tA, d.tB);
+    for (const l of (w.iso && w.iso.A) || []) push(Math.max(l.u0, d.a0), Math.min(l.u1, d.a1), d.tA - l.ep, d.tA);
+    for (const l of (w.iso && w.iso.B) || []) push(Math.max(l.u0, d.a0), Math.min(l.u1, d.a1), d.tB, d.tB + l.ep);
+  }
+  return R;
+}
+// distance le long d'un rayon horizontal (plan) jusqu'au premier mur ; null au-dela de maxD
+function castPlan(px, py, dx, dy, zq, R, maxD = 9) {
+  let best = maxD;
+  for (const r of R) {
+    if (zq < r.d.z0 - 1e-3 || zq > r.d.z1 + 1e-3) continue;
+    const F = frameOf(r.d), pu = uOf(r.d, px, py), pt = tOf(r.d, px, py), du = dx * F.ux + dy * F.uy, dt = dx * F.nx + dy * F.ny;
+    let lo = -Infinity, hi = Infinity, ok = true;
+    for (const [p, q, a, b] of [[pu, du, r.u0, r.u1], [pt, dt, r.t0, r.t1]]) {
+      if (Math.abs(q) < 1e-9) { if (p < a - 1e-6 || p > b + 1e-6) { ok = false; break; } continue; }
+      let s1 = (a - p) / q, s2 = (b - p) / q; if (s1 > s2) [s1, s2] = [s2, s1];
+      lo = Math.max(lo, s1); hi = Math.min(hi, s2);
+    }
+    if (!ok || hi < lo || hi < 0) continue;
+    best = Math.min(best, Math.max(lo, 0));
+  }
+  return best < maxD ? best : null;
+}
+// une cote : de a a b (plan [x, y, z]), petits traits aux bouts selon k (plan, unitaire)
+function addCote(a, b, k, minLen = 0.01) {
+  const L = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  if (L < minLen) return;
+  const T = (p) => [p[0], p[2], -p[1]], tk = 0.06;
+  coteSegs.push(T(a), T(b));
+  for (const p of [a, b]) coteSegs.push(T([p[0] - k[0] * tk, p[1] - k[1] * tk, p[2] - k[2] * tk]), T([p[0] + k[0] * tk, p[1] + k[1] * tk, p[2] + k[2] * tk]));
+  const el = document.createElement('div'); el.className = 'tag c'; el.textContent = fmtCote(L);
+  labelsEl.appendChild(el);
+  coteTags.push({ el, p: new THREE.Vector3((a[0] + b[0]) / 2, (a[2] + b[2]) / 2, -(a[1] + b[1]) / 2) });
+}
+// meuble : depuis le milieu de chaque face, droit devant jusqu'au mur
+function furnCotes(f) {
+  const g = f.col.geometry; if (!g.boundingBox) g.computeBoundingBox();
+  const bb = g.boundingBox, M = f.col.matrixWorld, R = wallRects(f.level, new Set()), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+  const zq = f.floorY + 0.3, zd = f.floorY + 0.04;
+  for (const [lx, lz, dx, dz] of [[bb.max.x, cz, 1, 0], [bb.min.x, cz, -1, 0], [cx, bb.max.z, 0, 1], [cx, bb.min.z, 0, -1]]) {
+    const p = new THREE.Vector3(lx, 0, lz).applyMatrix4(M), v = new THREE.Vector3(dx, 0, dz).transformDirection(M);
+    const px = p.x, py = -p.z, vx = v.x, vy = -v.z, dist = castPlan(px, py, vx, vy, zq, R, 6);
+    if (dist !== null) addCote([px, py, zd], [px + vx * dist, py + vy * dist, zd], [-vy, vx, 0]);
+  }
+}
+// cloison : de chaque face jusqu'au mur d'en face (au milieu), et de chaque bout jusqu'au mur suivant
+function wallCotes(w) {
+  const d = w.def, F = frameOf(d), um = (d.a0 + d.a1) / 2, R = wallRects(d.level, new Set([d.id]));
+  const zq = Math.min(d.z0 + 1.0, (d.z0 + d.z1) / 2), zd = zq, tc = (d.tA + d.tB) / 2;
+  for (const [side, sg] of [['A', -1], ['B', 1]]) {
+    const t = (side === 'A' ? d.tA : d.tB) + sg * liningAt(w, side, um), P = toPlan(d, um, t, zd);
+    const dist = castPlan(P[0], P[1], sg * F.nx, sg * F.ny, zq, R);
+    if (dist !== null) addCote(P, [P[0] + sg * F.nx * dist, P[1] + sg * F.ny * dist, zd], [F.ux, F.uy, 0]);
+  }
+  for (const [u, sg] of [[d.a0, -1], [d.a1, 1]]) {     // bout libre : on vise le long des deux faces et de l'axe (un mur qui s'arrete contre une face compte)
+    let dist = null;
+    for (const t of [d.tA - 0.005, tc, d.tB + 0.005]) {
+      const Q = toPlan(d, u, t, zd), g = castPlan(Q[0], Q[1], sg * F.ux, sg * F.uy, zq, R, 4);
+      if (g === null) continue;
+      dist = dist === null ? g : Math.min(dist, g);
+    }
+    const P = toPlan(d, u, tc, zd);
+    if (dist !== null) addCote(P, [P[0] + sg * F.ux * dist, P[1] + sg * F.uy * dist, zd], [F.nx, F.ny, 0]);
+  }
+}
+// ouverture : jusqu'aux bouts du mur ou aux ouvertures voisines, et l'allege d'une fenetre ; dessinee sur la face vue
+function opCotes(w, o) {
+  const d = w.def, F = frameOf(d), s = o.u - o.w / 2, e = o.u + o.w / 2, tc = (d.tA + d.tB) / 2, R = wallRects(d.level, new Set([d.id]));
+  const camA = tOf(d, camera.position.x, -camera.position.z) < tc;
+  const tDraw = camA ? d.tA - liningAt(w, 'A', o.u) - 0.03 : d.tB + liningAt(w, 'B', o.u) + 0.03;
+  const inA = d.kind === 'ext' ? !d.faceA.outer : camA;                // on mesure le long de la face interieure (ou vue)
+  const tRay = inA ? d.tA - liningAt(w, 'A', o.u) - 0.02 : d.tB + liningAt(w, 'B', o.u) + 0.02;
+  const zm = Math.min((o.zb + o.zt) / 2, o.zb + 1.0), zq = zm;
+  for (const [edge, sg] of [[s, -1], [e, 1]]) {
+    let gap = castPlan(...toPlan(d, edge, tRay, 0).slice(0, 2), sg * F.ux, sg * F.uy, zq, R, 12);
+    if (gap === null) gap = sg < 0 ? edge - d.a0 : d.a1 - edge;
+    for (const q of w.ops) if (q !== o) { const g2 = sg < 0 ? s - (q.u + q.w / 2) : (q.u - q.w / 2) - e; if (g2 > -1e-6 && g2 < gap) gap = g2; }
+    addCote(toPlan(d, edge, tDraw, zm), toPlan(d, edge + sg * gap, tDraw, zm), [0, 0, 1]);
+  }
+  if (!isDoor(o.type) && o.zb - d.floor > 0.05) addCote(toPlan(d, o.u, tDraw, d.floor), toPlan(d, o.u, tDraw, o.zb), [F.ux, F.uy, 0]);
+}
+// zero de la position des ouvertures : le nu du mur (ou du doublage) qui borne ce mur cote a0
+function uStart(w) {
+  const d = w.def;
+  if (d.kind === 'roof') return d.lim[0];
+  const F = frameOf(d), R = wallRects(d.level, new Set([d.id]));
+  const t = d.kind === 'ext' && d.faceA.outer ? d.tB + liningAt(w, 'B', d.lim[0]) + 0.02 : d.tA - liningAt(w, 'A', d.lim[0]) - 0.02;
+  const P = toPlan(d, d.lim[0], t, 0), g = castPlan(P[0], P[1], -F.ux, -F.uy, d.floor + 1.0, R, 1.0);
+  return g === null ? d.a0 : d.lim[0] - g;
+}
+function clearCotes() {
+  for (const t of coteTags) t.el.remove();
+  coteTags = []; coteSegs = [];
+}
+// appele a chaque image : ne recalcule que si la selection ou sa position a change
+function cotesTick() {
+  let sig = '', job = null;
+  const r3s = (v) => (Math.round(v * 1000) / 1000).toString();
+  if (furnMode && selFurn && selFurn.type === 'meuble' && present(selFurn)) {
+    const f = selFurn; sig = `f${f.key}|${r3s(f.x)}|${r3s(f.z)}|${r3s(f.rot)}|${f.it ? `${f.it.w}x${f.it.d}` : ''}`; job = () => furnCotes(f);
+  } else if (wallMode && wmMode === 'tout' && selWall && PW[selWall.key] && !selWall.removed) {
+    const w = PW[selWall.key], d = w.def; sig = `w${d.id}|${[d.tA, d.tB, d.a0, d.a1].map(r3s).join('|')}|${JSON.stringify(w.iso || '')}`; job = () => wallCotes(w);
+  } else {
+    const sel = ouvMode && selW && selI >= 0 ? { w: selW, o: selW.ops[selI] } : wallMode && wpSel && ['portion', 'trou', 'baie'].includes(wmMode) ? wpSel : null;
+    if (sel && sel.o && sel.w.def.kind !== 'roof') {
+      const d = sel.w.def, o = sel.o, camA = tOf(d, camera.position.x, -camera.position.z) < (d.tA + d.tB) / 2;
+      sig = `o${d.id}|${[o.u, o.w, o.zb, o.zt].map(r3s).join('|')}|${sel.w.ops.length}|${camA}`; job = () => opCotes(sel.w, o);
+    }
+  }
+  if (sig !== coteSig) {
+    coteSig = sig; clearCotes();
+    if (job) job();
+    coteLines.geometry.dispose();
+    coteLines.geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(coteSegs.flat(), 3));
+    coteLines.visible = coteSegs.length > 0;
+  }
+  for (const t of coteTags) placeTag(t.el, t.p);
+}
 
 // ---------------------------------------------------------------- revetements : peinture et materiaux des murs, sols des pieces
 const FINSTORE = 'maison-revetements';
@@ -4913,10 +5106,10 @@ document.getElementById('plan-meubles').addEventListener('change', renderPlan);
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
-  if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
+  if (ouvMode) { h.innerHTML = 'Cliquez une porte ou une fenêtre : faites-la glisser le long du mur (les cotes s’affichent), changez son sens, mettez-la sur un autre mur ou supprimez-la. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
   if (finMode) { h.innerHTML = 'Cliquez un mur ou un sol, puis choisissez une peinture ou un matériau. <b>Toute la pièce</b> repeint tous les murs de la pièce d’un coup.'; return; }
-  if (furnMode) { h.innerHTML = 'Cliquez un meuble, un équipement ou l’escalier : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Ajouter un élément</b> ouvre le catalogue ; les éléments muraux se collent au mur quand on les en approche. <b>Vue du dessus</b> aide à les placer.'; return; }
-  if (wallMode && wmMode === 'tout') { h.innerHTML = 'Cliquez une cloison : glissez-la pour la déplacer (vue Maquette), tirez ses poignées orange pour l’allonger, ou réglez ses cotes. <b>Portion</b> ou <b>Trou</b> pour ne casser qu’une partie, <b>Construire</b> pour en ajouter, <b>Isoler</b> pour doubler les murs.'; return; }
+  if (furnMode) { h.innerHTML = 'Cliquez un meuble, un équipement ou l’escalier : glissez-le pour le déplacer (les distances aux murs s’affichent), tournez-le ou supprimez-le. <b>Ajouter un élément</b> ouvre le catalogue ; les éléments muraux se collent au mur quand on les en approche. <b>Vue du dessus</b> aide à les placer.'; return; }
+  if (wallMode && wmMode === 'tout') { h.innerHTML = 'Cliquez une cloison : glissez-la pour la déplacer (vue Maquette), tirez ses poignées orange pour l’allonger, ou réglez ses cotes. Les distances aux murs voisins s’affichent en bleu. <b>Portion</b> ou <b>Trou</b> pour ne casser qu’une partie, <b>Construire</b> pour en ajouter, <b>Isoler</b> pour doubler les murs.'; return; }
   if (wallMode && wmMode === 'construire') { h.innerHTML = 'Cliquez-glissez au sol pour tracer une cloison. Ensuite : portes avec <b>Ouvertures</b>, peinture avec <b>Revêtements</b>. Pour la retoucher ou la supprimer : <b>Modifier</b>, puis cliquez-la.'; return; }
   if (wallMode && wmMode === 'baie') { h.innerHTML = 'Cliquez-glissez le long d’un mur pour tracer la baie vitrée (ou cliquez pour 2,40 m). Glissez-la ensuite pour la déplacer, réglez largeur, hauteur, nombre de vantaux et couleur du cadre.'; return; }
   if (wallMode && wmMode === 'isoler') { h.innerHTML = 'Cliquez la face d’un mur côté pièce pour un doublage intérieur, ou côté dehors pour une isolation par l’extérieur, puis choisissez l’épaisseur. Dans les combles, cliquez le dessous du toit pour isoler les rampants. La surface perdue est calculée.'; return; }
@@ -4941,6 +5134,7 @@ function loop() {
   if (mode === 'visite') stepWalker(dt); else orbit.update();
   for (const t of roomTags) placeTag(t.el, t.p);
   for (const t of mTags) placeTag(t.el, t.p);
+  cotesTick();
   renderer.render(scene, camera);
 }
 // ---------------------------------------------------------------- galerie des rendus
@@ -4991,7 +5185,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { PW, planSVG, style: { apply: applyStyle, get: styleState, info: shutterInfo, of: shutterOf, STYLE }, ramp: { RAMP, setRamp, atticCarrez, roofZ }, castFirst, getCollider: () => collider, recap: () => travauxLines(), orbit, cat: { CATALOG, add: (c) => addFromCatalog(c), state: () => ajoutsState() }, iso: { roomLoss, houseLoss, isoState, pick: (x, y) => pickIso(x, y), sel: () => isoSel }, ROOMS, geo: { editGeom, attachments, sidesOf, geoState, handles }, NEUF, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
+window.__maison = { PW, planSVG, ouvMoveTo: (id, u) => moveToWall(ouvMove, { w: PW[id], u, z: 1 }), ouvMoving: () => !!ouvMove, cotes: () => coteTags.map((t) => t.el.textContent), cotesTick, style: { apply: applyStyle, get: styleState, info: shutterInfo, of: shutterOf, STYLE }, ramp: { RAMP, setRamp, atticCarrez, roofZ }, castFirst, getCollider: () => collider, recap: () => travauxLines(), orbit, cat: { CATALOG, add: (c) => addFromCatalog(c), state: () => ajoutsState() }, iso: { roomLoss, houseLoss, isoState, pick: (x, y) => pickIso(x, y), sel: () => isoSel }, ROOMS, geo: { editGeom, attachments, sidesOf, geoState, handles }, NEUF, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
