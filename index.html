@@ -130,6 +130,7 @@ select#goto {
 .num span { color: var(--muted); font-size: 12px; }
 .num .tool { padding: 6px 10px; }
 .opmsg { margin: 0; font-size: 12.5px; color: var(--measure); }
+#st-info { margin-top: 8px; color: var(--muted); line-height: 1.4; }
 #wallpanel .wp-modes { padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
 #wallpanel .wp-modes button { padding: 9px 6px; border: 1px solid var(--line); }
 #wallpanel .opgrid select { font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; min-width: 0; }
@@ -188,6 +189,23 @@ select#goto {
 .opstyle summary { cursor: pointer; color: var(--fg); font-weight: 600; padding: 4px 0 8px; }
 .opstyle select { font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; min-width: 0; }
 #ouvpanel { max-height: calc(100% - 150px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; }
+#plan { inset: 0; z-index: 30; background: var(--panel-solid); overflow-y: auto; overscroll-behavior: contain;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px)); }
+#plan header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; max-width: 1100px; margin: 0 auto 8px; flex-wrap: wrap; }
+#plan h2 { margin: 0; font-family: var(--font-display); font-size: 22px; }
+#plan header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+#plan .recap-btns { align-items: center; }
+.plan-chk { font-size: 13px; display: flex; gap: 5px; align-items: center; }
+#plan-body { max-width: 1100px; margin: 0 auto; }
+#plan-body svg { width: 100%; height: auto; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.plan-legend { max-width: 1100px; margin: 10px auto 0; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.plan-legend .lg { display: inline-block; width: 18px; height: 10px; margin-right: 5px; vertical-align: -1px; border-radius: 2px; }
+.lg.ex { background: #33302c; } .lg.nv { background: #2b6cd1; } .lg.dm { border: 1.5px dashed #c0392b; } .lg.is { background: #e9c46a; } .lg.mb { border: 1px solid #8a8f94; }
+@media print {
+  body > *:not(#plan):not(#recap) { display: none !important; }
+  #plan { position: static; overflow: visible; background: #fff; color: #000; }
+  #plan .recap-btns { display: none; }
+}
 #recap { inset: 0; z-index: 30; background: var(--panel-solid); overflow-y: auto; overscroll-behavior: contain;
   padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px)); }
 #recap header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; max-width: 900px; margin: 0 auto 8px; }
@@ -211,7 +229,7 @@ select#goto {
 #recap .empty { color: var(--muted); padding: 20px 0; }
 @media (max-width: 640px) { #recap td.p { font-size: 11px; } #recap td.p input { width: 50px; } #recap td, #recap th { padding: 6px 3px; } }
 @media print {
-  body > *:not(#recap) { display: none !important; }
+  body > *:not(#recap):not(#plan) { display: none !important; }
   #recap { position: static; overflow: visible; background: #fff; color: #000; }
   .recap-btns, #recap td.p input { border: 0; }
   .recap-btns { display: none; }
@@ -388,7 +406,7 @@ select#goto {
     <button id="pj-new" class="tool">Repartir du plan d’origine</button>
   </div>
   <div class="pj-block">
-    <button id="pj-recap" class="tool accent">Récapitulatif des travaux</button>
+    <div class="row"><button id="pj-recap" class="tool accent">Récapitulatif des travaux</button><button id="pj-plan" class="tool">Plan coté</button></div>
   </div>
   <div class="pj-block">
     <span class="lbl2">Partager</span>
@@ -437,6 +455,7 @@ select#goto {
     <button data-wm="trou" aria-pressed="false">Trou</button>
     <button data-wm="construire" aria-pressed="false">Construire</button>
     <button data-wm="isoler" aria-pressed="false">Isoler</button>
+    <button data-wm="baie" aria-pressed="false">Baie vitrée</button>
   </div>
   <div id="wp-sel">
     <span class="lvl" id="wp-lvl">Aucune cloison sélectionnée</span>
@@ -474,6 +493,10 @@ select#goto {
     <p class="meta" id="wp-iso-info"></p>
   </div>
   <div id="wp-edit" class="opgrid" hidden>
+    <label for="wp-vant" id="wp-vant-lbl">Vantaux</label>
+    <select id="wp-vant"><option value="2">2 vantaux</option><option value="3">3 vantaux</option><option value="4">4 vantaux</option></select>
+    <label for="wp-coul" id="wp-coul-lbl">Cadre</label>
+    <select id="wp-coul"><option value="anthracite">Alu gris anthracite</option><option value="blanc">Blanc</option><option value="noir">Noir</option><option value="bois">Bois</option></select>
     <label for="wp-forme" id="wp-forme-lbl">Forme</label>
     <select id="wp-forme"><option value="">Rectangle</option><option value="cintre">Arche plein cintre</option><option value="surbaisse">Arche surbaissée</option></select>
     <label for="wp-w">Largeur</label>
@@ -545,6 +568,12 @@ select#goto {
   <div id="op-edit" class="opgrid" hidden>
     <label for="op-type">Type</label>
     <select id="op-type"></select>
+    <label for="op-vant" id="op-vant-lbl">Vantaux</label>
+    <select id="op-vant"><option value="2">2 vantaux</option><option value="3">3 vantaux</option><option value="4">4 vantaux</option></select>
+    <label for="op-coul" id="op-coul-lbl">Cadre</label>
+    <select id="op-coul"><option value="anthracite">Alu gris anthracite</option><option value="blanc">Blanc</option><option value="noir">Noir</option><option value="bois">Bois</option></select>
+    <label for="op-vol" id="op-vol-lbl">Volets</label>
+    <select id="op-vol"></select>
     <label for="op-forme" id="op-forme-lbl">Forme</label>
     <select id="op-forme"><option value="">Rectangle</option><option value="cintre">Arche plein cintre</option><option value="surbaisse">Arche surbaissée</option></select>
     <label for="op-w">Largeur</label>
@@ -563,12 +592,16 @@ select#goto {
   </div>
   <p id="op-msg" class="opmsg" hidden></p>
   <details class="opstyle" id="op-style">
-    <summary>Couleurs des menuiseries (toute la maison)</summary>
+    <summary>Fenêtres, volets et porte (toute la maison)</summary>
     <div class="opgrid">
       <label for="st-fen">Fenêtres</label><select id="st-fen"></select>
-      <label for="st-volet">Volets</label><select id="st-volet"></select>
+      <label for="st-vtype">Volets</label><select id="st-vtype"></select>
+      <label for="st-volet" id="st-volet-lbl">Couleur</label><select id="st-volet"></select>
+      <label for="st-vcof" id="st-vcof-lbl">Coffre</label><select id="st-vcof"></select>
+      <label for="st-vpos" id="st-vpos-lbl">Position</label><select id="st-vpos"></select>
       <label for="st-porte">Porte d’entrée</label><select id="st-porte"></select>
     </div>
+    <p id="st-info" class="opmsg" hidden></p>
   </details>
   <div class="row sep">
     <span id="op-count">Ouvertures d’origine</span>
@@ -591,6 +624,18 @@ select#goto {
     <button class="closebtn" id="gal-close">Fermer</button>
   </header>
   <div id="gal-body"></div>
+</div>
+<div id="plan" class="ui" role="dialog" aria-modal="true" aria-labelledby="plan-title" hidden>
+  <header>
+    <div><h2 id="plan-title">Plan coté</h2><p id="plan-sub"></p></div>
+    <div class="recap-btns">
+      <div class="cat-tabs" id="plan-tabs" role="group" aria-label="Étage"></div>
+      <label class="plan-chk"><input type="checkbox" id="plan-meubles" checked> Meubles</label>
+      <button class="closebtn" id="plan-print">Imprimer</button><button class="closebtn" id="plan-close">Fermer</button>
+    </div>
+  </header>
+  <div id="plan-body"></div>
+  <p class="plan-legend"><span class="lg ex"></span>Murs existants <span class="lg nv"></span>Cloisons neuves <span class="lg dm"></span>Démoli <span class="lg is"></span>Isolation <span class="lg mb"></span>Meubles</p>
 </div>
 <div id="recap" class="ui" role="dialog" aria-modal="true" aria-labelledby="recap-title" hidden>
   <header>
@@ -818,6 +863,7 @@ async function onModelAsync(gltf) {
   linkRooms(); updateRooms();
   initFinishes(gltf.scene);
   applyIso(lsGet(ISTORE, {}));
+  setRamp(+lsGet(RSTORE, 0) || 0);
   applyAjouts(lsGet(CSTORE, []));
   applyStyle(lsGet(STSTORE, {}));
   applyCut('all');
@@ -868,6 +914,7 @@ function applyCut(c) {
     const f = furn[k];
     const pw = PW[k];
     if (k === 'MatLib') { g.visible = false; continue; }
+    if (k === 'Rampants') { g.visible = !hide.includes('Toiture'); continue; }
     g.visible = w ? !w.removed && !hide.includes(w.level) : f ? present(f) && !hide.includes(f.level) : pw ? !hide.includes(pw.level) : !hide.includes(k.startsWith('Sol__') ? k.split('__')[1] : k);
   }
   if (mode === 'maquette' && groups.Plafonds_RDC && c === 'all') { /* toit pose : rien a voir dedans */ }
@@ -919,6 +966,7 @@ function castFirst(origin, dir, far) {
   for (const w of Object.values(walls)) if (!w.removed) targets.push(w.col);
   for (const f of Object.values(furn)) if (present(f)) targets.push(f.col);
   for (const pw of Object.values(PW)) if (pw.def.kind !== 'int' && pw.col) targets.push(pw.col);
+  if (RAMP.col) targets.push(RAMP.col);
   const hits = ray.intersectObjects(targets, false);
   return hits.length ? hits[0] : null;
 }
@@ -980,7 +1028,7 @@ sel.addEventListener('change', () => {
 
 // clavier (codes physiques : marche aussi en AZERTY avec ZQSD)
 addEventListener('keydown', (e) => {
-  if (e.target === sel || !gal.hidden || !lb.hidden || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || !document.getElementById('recap').hidden) return;
+  if (e.target === sel || !gal.hidden || !lb.hidden || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || !document.getElementById('recap').hidden || !document.getElementById('plan').hidden) return;
   keys.add(e.code);
   if (mode === 'visite' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
@@ -1097,7 +1145,10 @@ function updateHud() {
     const loss = roomLoss(r);
     if (loss > 0.005) rows.push(['Isolée', `${(w * h - loss).toFixed(1).replace('.', ',')} m² (−${loss.toFixed(2).replace('.', ',')})`]);
   }
-  else if (r?.dims) rows.push(['Surface', r.dims]);
+  else if (r?.dims) {
+    rows.push(['Surface', r.dims]);
+    if (r.lvl === 2 && roofPlanes().length) rows.push(['Debout (1,80 m)', `${atticCarrez().toFixed(1).replace('.', ',')} m²`]);
+  }
   if (r?.hsp) rows.push(['Plafond', r.hsp]);
   rows.push(['Vos yeux', '1,60 m du sol']);
   hudDl.innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
@@ -1183,31 +1234,36 @@ function renderPanel(msg = '') {
   } else if (wpSel) {
     const d = wpSel.w.def, o = wpSel.o;
     wp.lvl.textContent = `${d.kind === 'ext' ? 'Mur extérieur' : 'Cloison'} · ${LEVEL_LABEL[d.level]}`;
-    wp.name.textContent = `${o.type === 'trou' ? 'Trou' : 'Portion abattue'} · ${wallLabel(d)}`;
+    wp.name.textContent = `${o.type === 'trou' ? 'Trou' : o.type === 'baie_vitree' ? 'Baie vitrée' : 'Portion abattue'} · ${wallLabel(d)}`;
     wp.meta.textContent = 'Glissez-la le long du mur pour la déplacer, ou réglez les cotes.';
     wp.edit.hidden = false; wp.fill.hidden = false;
-    const tr = o.type === 'trou';
-    for (const id of ['wp-h-lbl', 'wp-h-row', 'wp-zb-lbl', 'wp-zb-row', 'wp-forme-lbl']) document.getElementById(id).hidden = !tr;
+    const tr = o.type === 'trou', bv = o.type === 'baie_vitree';
+    for (const id of ['wp-zb-lbl', 'wp-zb-row', 'wp-forme-lbl']) document.getElementById(id).hidden = !tr;
+    for (const id of ['wp-h-lbl', 'wp-h-row']) document.getElementById(id).hidden = !(tr || bv);
+    for (const id of ['wp-vant-lbl', 'wp-coul-lbl', 'wp-vant', 'wp-coul']) document.getElementById(id).hidden = !bv;
     wp.forme.hidden = !tr; wp.forme.value = o.forme || '';
+    if (bv) { document.getElementById('wp-vant').value = String(o.vantaux || 2); document.getElementById('wp-coul').value = o.coul || 'anthracite'; }
     wp.w.value = cm(o.w); wp.h.value = cm(o.zt - o.zb); wp.zb.value = cm(o.zb - d.floor); wp.u.value = cm(o.u - o.w / 2 - d.lim[0]);
   } else {
-    wp.lvl.textContent = wmMode === 'trou' ? 'Faire un trou' : 'Casser une portion de mur';
-    wp.name.textContent = 'Tracez sur un mur la partie à casser';
+    wp.lvl.textContent = wmMode === 'trou' ? 'Faire un trou' : wmMode === 'baie' ? 'Ouvrir une baie vitrée' : 'Casser une portion de mur';
+    wp.name.textContent = wmMode === 'baie' ? 'Tracez-la sur un mur' : 'Tracez sur un mur la partie à casser';
     wp.meta.textContent = wmMode === 'trou'
       ? 'Cliquez-glissez sur un mur pour dessiner le trou, ou cliquez simplement pour un trou de 80 × 80 cm.'
+      : wmMode === 'baie' ? 'Cliquez-glissez le long d’un mur pour choisir sa largeur, ou cliquez simplement pour une baie de 2,40 m. La fenêtre ou la porte qu’elle recouvre est remplacée.'
       : 'Cliquez-glissez le long d’un mur pour choisir la largeur (sur toute la hauteur), ou cliquez simplement pour 1 m.';
   }
   wp.brk.disabled = !selWall; wp.desel.disabled = wmMode === 'tout' ? !selWall : wmMode === 'isoler' ? !isoSel : !wpSel;
   wp.desel.hidden = wmMode === 'construire';
-  const nG = Object.keys(geoState()).length, nI = Object.keys(isoState()).length;
-  const n = removedOrder.length + roughCount() + Object.keys(NEUF).length + nG + nI;
-  const nN = Object.keys(NEUF).length, nD = n - nN - nG - nI;
-  wp.count.textContent = n ? [nD ? `${nD} démolition${nD > 1 ? 's' : ''}` : '', nN ? `${nN} cloison${nN > 1 ? 's' : ''} neuve${nN > 1 ? 's' : ''}` : '',
-    nG ? `${nG} retouchée${nG > 1 ? 's' : ''}` : '', nI ? `${nI} mur${nI > 1 ? 's' : ''} isolé${nI > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') : 'Plan d’origine';
+  const nG = Object.keys(geoState()).length, nI = Object.keys(isoState()).length, nR = RAMP.ep ? 1 : 0;
+  const n = removedOrder.length + roughCount() + Object.keys(NEUF).length + nG + nI + nR;
+  const nB = Object.values(PW).reduce((a, w) => a + w.ops.filter((o) => o.type === 'baie_vitree').length, 0);
+  const nN = Object.keys(NEUF).length, nD = n - nN - nG - nI - nB - nR;
+  wp.count.textContent = n ? [nD ? `${nD} démolition${nD > 1 ? 's' : ''}` : '', nB ? `${nB} baie${nB > 1 ? 's' : ''}` : '', nN ? `${nN} cloison${nN > 1 ? 's' : ''} neuve${nN > 1 ? 's' : ''}` : '',
+    nG ? `${nG} retouchée${nG > 1 ? 's' : ''}` : '', nI ? `${nI} mur${nI > 1 ? 's' : ''} isolé${nI > 1 ? 's' : ''}` : '', nR ? 'rampants isolés' : ''].filter(Boolean).join(' · ') : 'Plan d’origine';
   wp.undo.disabled = !casseHist.length && !removedOrder.length; wp.reset.disabled = !n;
   refreshCasseOverlay();
 }
-function roughCount() { let n = 0; for (const w of Object.values(PW)) n += w.ops.filter((o) => ROUGH(o.type)).length; return n; }
+function roughCount() { let n = 0; for (const w of Object.values(PW)) n += w.ops.filter((o) => DRAWN(o.type)).length; return n; }
 function refreshCasseOverlay() {
   refreshHandles();
   if (wallMode && wmMode === 'isoler') { refreshIsoOverlay(); return; }
@@ -1271,6 +1327,8 @@ wp.brk.addEventListener('click', () => {
 });
 wp.desel.addEventListener('click', () => { select(null); wpSel = null; isoSel = null; renderPanel(); });
 wp.forme.addEventListener('change', () => editRough((o) => { o.forme = wp.forme.value || undefined; if (!o.forme) delete o.forme; }));
+document.getElementById('wp-vant').addEventListener('change', (e) => editRough((o) => { o.vantaux = +e.target.value; }));
+document.getElementById('wp-coul').addEventListener('change', (e) => editRough((o) => { o.coul = e.target.value; }));
 for (const b of wp.modes) b.addEventListener('click', () => { wmMode = b.dataset.wm; select(null); wpSel = null; isoSel = null; renderPanel(); setHelp(); });
 wp.undo.addEventListener('click', () => {
   const h = casseHist.pop();
@@ -1280,12 +1338,14 @@ wp.undo.addEventListener('click', () => {
   else if (h.kind === 'neuf-del') { restoreNew(h.keep); }
   else if (h.kind === 'geo') { restoreGeo(h.snap); }
   else if (h.kind === 'iso') { applyIso(h.snap); saveIso(); }
+  else if (h.kind === 'ramp') { setRamp(h.ep); lsSet(RSTORE, RAMP.ep); }
   else {
     const at = ouvHist.indexOf(h.entry); if (at >= 0) ouvHist.splice(at, 1);
     restoreEntry(h.entry);
     if (h.kind === 'reset') {
       for (const n of h.neuf || []) restoreNew(n);
       if (h.iso) { applyIso(h.iso); saveIso(); }
+      if (h.ramp) { setRamp(h.ramp); lsSet(RSTORE, RAMP.ep); }
       if (h.geo) restoreGeo(h.geo);
       for (const k of h.keys) if (walls[k]) setRemoved(walls[k], true); save();
     }
@@ -1293,7 +1353,7 @@ wp.undo.addEventListener('click', () => {
   wpSel = null; renderPanel();
 });
 wp.reset.addEventListener('click', () => {
-  const ids = Object.keys(PW).filter((id) => PW[id].ops.some((o) => ROUGH(o.type)));
+  const ids = Object.keys(PW).filter((id) => PW[id].ops.some((o) => DRAWN(o.type)));
   const entry = ids.length ? snapshot(...ids) : [];
   for (const id of ids) { PW[id].ops = PW[id].orig.map((o) => ({ ...o })); rebuildWall(id); }
   saveOuv();
@@ -1307,7 +1367,8 @@ wp.reset.addEventListener('click', () => {
   save(); saveNeuf(); saveFin();
   applyCut(mode === 'maquette' ? cut : 'all');
   const iso = isoState(); applyIso({}); saveIso();
-  casseHist.push({ kind: 'reset', entry, keys, neuf, geo, iso });
+  const ramp = RAMP.ep; if (ramp) { setRamp(0); lsSet(RSTORE, 0); }
+  casseHist.push({ kind: 'reset', entry, keys, neuf, geo, iso, ramp });
   wpSel = null; renderPanel('Tout est revenu au plan d’origine.');
 });
 wp.fill.addEventListener('click', () => {
@@ -1928,6 +1989,10 @@ CATALOG.push(
   { id: 'zone_sol', cat: 'Sols et plafonds', label: 'Zone de revêtement de sol', w: [3.0, 0.5, 9.0], d: [3.0, 0.5, 7.0], h: [0.012, 0.012, 0.012], fins: F_SOL, fin: 'parquet', b(p, K) {
     K.box(K.scaled(p.fin, p.w, p.d), p.w, 0.012, p.d, 0, 0, 0);
   } },
+  { id: 'tremie', cat: 'Sols et plafonds', label: 'Plancher (reboucher une trémie)', w: [1.0, 0.4, 3.0], d: [3.2, 0.4, 4.0], h: [0.22, 0.22, 0.22], fins: F_SOL, fin: 'parquet', b(p, K) {
+    K.box(K.scaled(p.fin, p.w, p.d), p.w, 0.012, p.d, 0, 0, 0);
+    K.box(K.white, p.w, 0.2, p.d, 0, -0.2, 0);
+  } },
   { id: 'zone_plafond', cat: 'Sols et plafonds', label: 'Faux plafond', w: [3.0, 0.5, 9.0], d: [3.0, 0.5, 7.0], h: [0.05, 0.03, 0.3], z0: 2.4, fins: ['blanc', 'creme', 'chene', 'gris', 'anthracite'], fin: 'blanc', b(p, K) {
     K.box(K.F, p.w, p.h, p.d, 0, p.z0, 0);
   } },
@@ -2180,8 +2245,8 @@ let WDATA = null;
 const MATS = {}, TILES = {};
 const PW = {};                 // murs generes, par id : { def, ops, orig, group, col, level }
 const OSTORE = 'maison-ouvertures';
-const TYPES_EXT = [['fenetre', 'Fenêtre'], ['petite', 'Petite fenêtre'], ['porte_fenetre', 'Porte-fenêtre'], ['porte', 'Porte'], ['baie', 'Baie libre (sans menuiserie)'], ['trou', 'Trou (mur cassé)'], ['breche', 'Portion abattue']];
-const TYPES_INT = [['porte_int', 'Porte'], ['baie', 'Passage libre'], ['verriere', 'Verrière d’atelier'], ['trou', 'Trou (mur cassé)'], ['breche', 'Portion abattue']];
+const TYPES_EXT = [['fenetre', 'Fenêtre'], ['petite', 'Petite fenêtre'], ['porte_fenetre', 'Porte-fenêtre'], ['porte', 'Porte'], ['baie', 'Baie libre (sans menuiserie)'], ['baie_vitree', 'Baie vitrée coulissante'], ['trou', 'Trou (mur cassé)'], ['breche', 'Portion abattue']];
+const TYPES_INT = [['porte_int', 'Porte'], ['baie', 'Passage libre'], ['baie_vitree', 'Baie vitrée coulissante'], ['verriere', 'Verrière d’atelier'], ['trou', 'Trou (mur cassé)'], ['breche', 'Portion abattue']];
 const TYPES_ROOF = [['velux', 'Fenêtre de toit']];
 const TYPE_LABEL = Object.fromEntries([...TYPES_EXT, ...TYPES_INT, ...TYPES_ROOF]);
 const typesOf = (d) => (d.kind === 'ext' ? TYPES_EXT : d.kind === 'roof' ? TYPES_ROOF : TYPES_INT);
@@ -2189,10 +2254,11 @@ const DEF = {   // dimensions par defaut quand on ajoute ou change de type (zb/z
   fenetre: { w: 0.95, zb: 0.85, zt: 2.30 }, petite: { w: 0.40, zb: 1.65, zt: 2.25 }, porte_fenetre: { w: 1.20, zb: 0.0, zt: 2.25 },
   porte: { w: 0.95, zb: 0.0, zt: 2.20 }, baie: { w: 1.20, zb: 0.0, zt: 2.10 }, porte_int: { w: 0.80, zb: 0.0, zt: 2.04 },
   velux: { w: 0.78, zb: 0.0, zt: 1.18 }, trou: { w: 0.80, zb: 1.0, zt: 1.80 }, breche: { w: 1.0, zb: 0.0, zt: 2.40 },
-  verriere: { w: 1.40, zb: 1.0, zt: 2.10 },        // toit : zb/zt = distances le long de la pente depuis l'egout
+  verriere: { w: 1.40, zb: 1.0, zt: 2.10 }, baie_vitree: { w: 2.40, zb: 0.0, zt: 2.15 },        // toit : zb/zt = distances le long de la pente depuis l'egout
 };
 const GAP = 0.15;              // ecart minimal entre deux ouvertures (trumeau)
-const isDoor = (t) => t === 'porte' || t === 'porte_int' || t === 'baie' || t === 'porte_fenetre';
+const isDoor = (t) => t === 'porte' || t === 'porte_int' || t === 'baie' || t === 'porte_fenetre' || t === 'baie_vitree';
+const DRAWN = (t) => ROUGH(t) || t === 'baie_vitree';        // ouvertures tracees a la main dans l'outil Murs : elles englobent ce qu'elles touchent
 const baseName = (n) => n.replace(/\.\d+$/, '');
 const PAINTS = {};
 const SPECIAL = {
@@ -2314,18 +2380,31 @@ function buildWallBody(B, d, ops, fin, iso) {
   for (const o of ops) { U.add(o.u - o.w / 2); U.add(o.u + o.w / 2); Z.add(o.zb); Z.add(o.zt); }
   for (const f of [d.faceA, d.faceB]) for (const b of f.bands) { U.add(b.u0); U.add(b.u1); Z.add(b.z0); Z.add(b.z1); }
   // doublages (isolation) : epaisseur par face, sur une plage de u et de hauteur
-  const iA = (iso && iso.A) || [], iB = (iso && iso.B) || [];
+  const iA = (!d.slope && iso && iso.A) || [], iB = (!d.slope && iso && iso.B) || [];
   const zr = (face) => (face.outer ? [d.z0, d.z1] : [d.floor ?? d.z0, d.kind === 'ext' ? d.z1 - 0.21 : d.z1]);
   const zrA = zr(d.faceA), zrB = zr(d.faceB);
   for (const l of [...iA, ...iB]) { U.add(l.u0); U.add(l.u1); }
   if (iA.length) { Z.add(zrA[0]); Z.add(zrA[1]); }
   if (iB.length) { Z.add(zrB[0]); Z.add(zrB[1]); }
   const epOf = (list, zrng, u, z) => { if (z < zrng[0] || z > zrng[1]) return 0; for (const l of list) if (u > l.u0 && u < l.u1) return l.ep; return 0; };
+  // haut en pente sous la toiture : cassures la ou le pan le plus bas change
+  const topAt = d.slope ? (u) => { const c = (d.tA + d.tB) / 2, P = toPlan(d, u, c, 0); return roofZ(P[0], P[1]) - 0.005; } : null;
+  if (topAt) {
+    const c = (d.tA + d.tB) / 2, P0 = toPlan(d, 0, c, 0), P1 = toPlan(d, 1, c, 0);
+    const lin = roofPlanes().map((pl) => { const a = pl.z(P0[0], P0[1]); return [a, pl.z(P1[0], P1[1]) - a]; });
+    for (let i = 0; i < lin.length; i++) for (let j = i + 1; j < lin.length; j++) {
+      const db = lin[i][1] - lin[j][1]; if (Math.abs(db) < 1e-9) continue;
+      const u = (lin[j][0] - lin[i][0]) / db; if (u > d.a0 && u < d.a1) U.add(u);
+    }
+  }
   const us = [...U].filter((v) => v >= d.a0 - 1e-6 && v <= d.a1 + 1e-6).sort((a, b) => a - b);
+  const colTop = topAt ? us.slice(0, -1).map((u, i) => Math.min(topAt(u), topAt(us[i + 1]))) : null;
+  if (colTop) Z.add(Math.min(...colTop));
   const zs = [...Z].filter((v) => v >= d.z0 - 1e-6 && v <= d.z1 + 1e-6).sort((a, b) => a - b);
   const nu = us.length - 1, nz = zs.length - 1;
   const solid = (i, j) => {
     if (i < 0 || j < 0 || i >= nu || j >= nz) return null;
+    if (colTop && zs[j + 1] > colTop[i] + 1e-6) return false;
     const uc = (us[i] + us[i + 1]) / 2, zc = (zs[j] + zs[j + 1]) / 2;
     return !ops.some((o) => uc > o.u - o.w / 2 && uc < o.u + o.w / 2 && zc > o.zb && zc < o.zt);
   };
@@ -2374,6 +2453,30 @@ function buildWallBody(B, d, ops, fin, iso) {
           const m = side < 0 ? linedMat(d.faceA, fA, uc) : linedMat(d.faceB, fB, uc);
           B.quad(m, toPlan(d, u0, base + side * lo, z1), du, vT(side * (hi - lo)), [0, 0, e0 > e1 ? 1 : -1]);
         }
+      }
+    }
+  }
+  // cloison sous toiture : un chapeau en trapeze par colonne, jusqu'a la pente
+  if (topAt) {
+    for (let i = 0; i < nu; i++) {
+      let zc = null;                     // base du chapeau : derniere ligne de coupe sous la pente
+      for (let k = zs.length - 1; k >= 0; k--) if (zs[k] <= colTop[i] + 1e-6) { zc = zs[k]; break; }
+      if (zc === null) continue;
+      const u0 = us[i], u1 = us[i + 1], t0 = topAt(u0), t1 = topAt(u1);
+      if (t0 - zc < 0.002 && t1 - zc < 0.002) continue;
+      if (ops.some((o) => (u0 + u1) / 2 > o.u - o.w / 2 && (u0 + u1) / 2 < o.u + o.w / 2 && o.zt > zc + 0.01)) continue;
+      const m = bandMat(d.faceA, (u0 + u1) / 2, zc - 0.01, fA), mb = bandMat(d.faceB, (u0 + u1) / 2, zc - 0.01, fB);
+      for (const [t, mm, sgn] of [[d.tA, m, -1], [d.tB, mb, 1]]) {
+        const a = toPlan(d, u0, t, zc), b = toPlan(d, u1, t, zc), c2 = toPlan(d, u1, t, t1), e = toPlan(d, u0, t, t0);
+        B.vtri(mm, a, b, c2, nT(sgn)); B.vtri(mm, a, c2, e, nT(sgn));
+      }
+      const sl = (t1 - t0) / (u1 - u0), l = Math.hypot(sl, 1), n = [(-sl / l) * F.ux, (-sl / l) * F.uy, 1 / l];
+      const p1 = toPlan(d, u0, d.tA, t0), p2 = toPlan(d, u1, d.tA, t1), p3 = toPlan(d, u1, d.tB, t1), p4 = toPlan(d, u0, d.tB, t0);
+      B.vtri('Platre', p1, p2, p3, n); B.vtri('Platre', p1, p3, p4, n);
+      for (const [uu, tt, sg, cond] of [[u0, t0, -1, i === 0], [u1, t1, 1, i === nu - 1]]) {
+        if (!cond) continue;
+        const a = toPlan(d, uu, d.tA, zc), b = toPlan(d, uu, d.tB, zc), c2 = toPlan(d, uu, d.tB, tt), e = toPlan(d, uu, d.tA, tt);
+        B.vtri('Platre', a, b, c2, nU(sg)); B.vtri('Platre', a, c2, e, nU(sg));
       }
     }
   }
@@ -2435,10 +2538,12 @@ function buildVerriere(B, d, u0, u1, z0, z1) {
 }
 
 function buildJoinery(B, d, o, iso) {
-  const MEN = STYLE.fen || 'Menuiserie', PORTE = STYLE.porte || 'Porte_entree', VOL = STYLE.volet === 'aucun' ? null : STYLE.volet || 'Volet_rouge';
-  const s = o.u - o.w / 2, e = o.u + o.w / 2, zb = o.zb, zt = o.zt;
+  const MEN = STYLE.fen || 'Menuiserie', PORTE = STYLE.porte || 'Porte_entree';
+  const s = o.u - o.w / 2, e = o.u + o.w / 2, zb = o.zb, V = shutterOf(d, o);
+  const zt = V && V.type === 'roulant' && V.cof === 'interieur' ? o.zt - V.hc : o.zt;    // coffre interieur : le dormant descend
   if (o.type === 'baie' || ROUGH(o.type)) return;
   if (o.type === 'verriere') { buildVerriere(B, d, s, e, zb, zt); return; }
+  if (o.type === 'baie_vitree' && d.kind !== 'ext') { buildBaie(B, d, o, (d.tA + d.tB) / 2); return; }
   if (d.kind === 'int') {                       // porte interieure : chambranles + vantail ouvert a 90 deg
     const jw = 0.07, pr = 0.015, top = Math.min(zt + jw, d.z1);
     for (const [f, sg] of [[d.tA, -1], [d.tB, 1]]) {
@@ -2466,6 +2571,8 @@ function buildJoinery(B, d, o, iso) {
       B.wbox(d, PORTE, s, e, tm - 0.035, tm + 0.035, zl, zl + 0.07);
       B.wbox(d, 'Verre', s + 0.06, e - 0.06, tm - 0.004, tm + 0.004, zl + 0.07, zt);
     }
+  } else if (o.type === 'baie_vitree') {
+    buildBaie(B, d, zt !== o.zt ? { ...o, zt } : o, tm);
   } else if (o.type === 'porte_fenetre') {      // dormant + vantaux vitres ouverts vers l'interieur (on peut passer)
     B.wbox(d, MEN, s, s + fr, tm - dp, tm + dp, zb, zt);
     B.wbox(d, MEN, e - fr, e, tm - dp, tm + dp, zb, zt);
@@ -2484,7 +2591,6 @@ function buildJoinery(B, d, o, iso) {
     };
     leaf(s + fr, s + fr + 0.045);
     if (two) leaf(e - fr - 0.045, e - fr);
-    if (VOL) B.wbox(d, VOL, s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); if (VOL) B.wbox(d, VOL, e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt);
   } else {                                      // fenetre, petite fenetre
     B.wbox(d, MEN, s, s + fr, tm - dp, tm + dp, zb, zt);
     B.wbox(d, MEN, e - fr, e, tm - dp, tm + dp, zb, zt);
@@ -2498,17 +2604,16 @@ function buildJoinery(B, d, o, iso) {
     }
     B.wbox(d, 'Verre', s + fr, e - fr, tm - 0.003, tm + 0.003, zb + fr, zt - fr);
     if (o.type !== 'porte_fenetre') B.wbox(d, MEN, s - 0.03, e + 0.03, tm, tIn - sg * 0.03, zb - 0.03, zb);
-    if (o.type === 'petite') if (VOL) B.wbox(d, VOL, s, e, tOut - sg * 0.05, tOut - sg * 0.09, zb, zt);
-    else { if (VOL) B.wbox(d, VOL, s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); if (VOL) B.wbox(d, VOL, e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt); }
   }
+  if (V) buildShutters(B, d, o, V, { s, e, zb, zt: o.zt, tOut, tIn, tm, sg, dp, MEN });
   // encadrement exterieur : pierre sombre harpee cote rue, appui beton ailleurs
   if (north) {
-    const p = 0.03;
-    B.wbox(d, 'Pierre_sombre', s - 0.24, e + 0.24, tOut, tOut + sg * p, zt, zt + 0.30);
+    const p = 0.03, zl = o.zt;
+    B.wbox(d, 'Pierre_sombre', s - 0.24, e + 0.24, tOut, tOut + sg * p, zl, zl + 0.30);
     if (!isDoor(o.type)) B.wbox(d, 'Pierre_sombre', s - 0.12, e + 0.12, tOut - sg * 0.10, tOut + sg * 0.06, zb - 0.10, zb);
     let z = zb, k = 0;
-    while (z < zt - 0.02) {
-      const z2 = Math.min(z + 0.30, zt), wd = k % 2 === 0 ? 0.30 : 0.17;
+    while (z < zl - 0.02) {
+      const z2 = Math.min(z + 0.30, zl), wd = k % 2 === 0 ? 0.30 : 0.17;
       B.wbox(d, 'Pierre_sombre', s - wd, s, tOut, tOut + sg * p, z, z2 - 0.006);
       B.wbox(d, 'Pierre_sombre', e, e + wd, tOut, tOut + sg * p, z, z2 - 0.006);
       z = z2; k++;
@@ -2518,9 +2623,165 @@ function buildJoinery(B, d, o, iso) {
   }
 }
 
+// ---------------------------------------------------------------- volets : persiennes repliees en tableau (d'origine), battants, pleins, roulants
+const SHUT_T = ['fenetre', 'petite', 'porte_fenetre', 'baie_vitree'];
+const VT_OK = ['tableau', 'battants', 'pleins', 'roulant', 'aucun'];
+function shutterOf(d, o) {
+  if (d.kind !== 'ext' || !SHUT_T.includes(o.type)) return null;
+  const own = VT_OK.includes(o.vt) ? o.vt : null, type = own || STYLE.vtype || 'tableau';
+  if (type === 'aucun' || (type === 'tableau' && o.type === 'baie_vitree' && !own)) return null;
+  const h = o.zt - o.zb;
+  const col = STYLE.volet || (type === 'roulant' ? STYLE.fen || 'Menuiserie' : 'Volet_rouge');
+  return { type, own: !!own, col, pos: STYLE.vpos || '', cof: STYLE.vcof || 'tableau', hc: h <= 1.0 ? 0.15 : h <= 1.6 ? 0.18 : 0.205 };
+}
+// teinte plus sombre d'une couleur ou d'une matiere (garde la texture du bois)
+const shadeOf = (m, k = 0.3) => {
+  if (m && m[0] === '#') return `#${new THREE.Color(m).multiplyScalar(k).getHexString()}`;
+  const key = `${m}~${k}`, src = MATS[m];
+  if (!src || !src.color) return '#3a3a3a';
+  if (!MATS[key]) { const c = src.clone(); c.color.multiplyScalar(k); c.name = key; MATS[key] = c; if (TILES[m]) TILES[key] = TILES[m]; }
+  return key;
+};
+// un vantail : a le long de sa largeur, b dans son epaisseur (b = th : face vue), z vertical ; M(a, b) -> [u, t] dans le repere du mur
+function shutterLeaf(B, d, col, M, a0, a1, th, z0, z1, opt = {}) {
+  const { kind = 'pers', st = 0.05, hingeA = a0, barresOut = false } = opt;
+  const dk = shadeOf(col), lo = Math.min(a0, a1), hi = Math.max(a0, a1);
+  const box = (m, A0, A1, b0, b1, Z0, Z1) => { const p = M(A0, b0), q = M(A1, b1); B.wbox(d, m, p[0], q[0], p[1], q[1], Z0, Z1); };
+  const P = (a, b, z) => { const [u, t] = M(a, b); return toPlan(d, u, t, z); };
+  const V3 = (p, q) => [q[0] - p[0], q[1] - p[1], q[2] - p[2]];
+  const nb = V3(P(0, 0, 0), P(0, 1, 0));
+  if (kind === 'plein') {                   // planches jointives, barres (et echarpe) cote facade quand il est ouvert
+    box(col, lo, hi, 0, th, z0, z1);
+    const n = Math.max(2, Math.round((hi - lo) / 0.12));
+    for (let k = 1; k < n; k++) { const x = lo + (k * (hi - lo)) / n; box(dk, x - 0.004, x + 0.004, th, th + 0.0015, z0 + 0.003, z1 - 0.003); }
+    const b0 = barresOut ? th : -0.022, b1 = barresOut ? th + 0.022 : 0, H = z1 - z0;
+    const bars = H > 1.5 ? [z0 + 0.16, z0 + H / 2, z1 - 0.16] : [z0 + 0.16, z1 - 0.16];
+    const cb = shadeOf(col, 0.72);
+    for (const zc of bars) box(cb, lo + 0.015, hi - 0.015, b0, b1, zc - 0.05, zc + 0.05);
+    if (barresOut) {
+      const aH = hingeA <= lo + 1e-6 ? lo + 0.03 : hi - 0.03, aF = hingeA <= lo + 1e-6 ? hi - 0.03 : lo + 0.03, across = V3(P(0, b0, 0), P(0, b1, 0));
+      for (let i = 0; i < bars.length - 1; i++) {
+        const za = bars[i] + 0.05, zf = bars[i + 1] - 0.14;
+        if (zf - za < 0.1) continue;
+        const c0 = P(aH, b1, za), e1 = V3(c0, P(aF, b1, zf));
+        B.quad(cb, c0, e1, [0, 0, 0.09], nb);
+        B.quad(cb, P(aH, b0, za + 0.09), e1, across, [0, 0, 1]);
+        B.quad(cb, P(aH, b0, za), e1, across, [0, 0, -1]);
+      }
+    }
+    return;
+  }
+  // persienne : cadre + lames inclinees vers l'exterieur sur un fond sombre
+  const rb = 0.09, rt = 0.07, spans = [];
+  box(col, lo, lo + st, 0, th, z0, z1); box(col, hi - st, hi, 0, th, z0, z1);
+  box(col, lo + st, hi - st, 0, th, z0, z0 + rb); box(col, lo + st, hi - st, 0, th, z1 - rt, z1);
+  if (z1 - z0 > 1.5) { const zm = (z0 + z1) / 2; box(col, lo + st, hi - st, 0, th, zm - 0.035, zm + 0.035); spans.push([z0 + rb, zm - 0.035], [zm + 0.035, z1 - rt]); }
+  else spans.push([z0 + rb, z1 - rt]);
+  const A0 = lo + st, ea = V3(P(A0, 0, 0), P(hi - st, 0, 0));
+  const bB = th * 0.15, bF = th * 0.92, dz = 0.026, ln = Math.hypot(bF - bB, dz);
+  const nUp = [nb[0] * dz / ln, nb[1] * dz / ln, (bF - bB) / ln], nDn = nUp.map((x) => -x);
+  for (const [za, zc] of spans) {
+    box(dk, A0, hi - st, 0.002, 0.005, za, zc);
+    for (let z = zc - 0.008; z > za + 0.014; z -= 0.045) {
+      const top = P(A0, bB, z), e2 = V3(top, P(A0, bF, z - dz));
+      B.quad(col, top, ea, e2, nUp);
+      B.quad(col, P(A0, bB, z - 0.006), ea, e2, nDn);
+    }
+  }
+}
+function buildShutters(B, d, o, V, c) {
+  const { s, e, zb, zt, tOut, sg } = c, w = e - s, col = V.col;
+  if (V.type === 'roulant') { buildRoller(B, d, V, c); return; }
+  if (V.type === 'tableau') {               // persiennes metalliques repliables, rangees dans le tableau
+    if (o.type === 'petite' && !V.pos && !V.own) { B.wbox(d, col, s, e, tOut - sg * 0.05, tOut - sg * 0.09, zb, zt); return; }
+    const np = Math.max(1, Math.round(w / 2 / 0.18)), pw = w / 2 / np, th = 0.03;
+    const shown = V.pos === 'ferme' ? np : V.pos === 'mi' ? Math.ceil(np / 2) : 0;
+    const M = (a, b) => [a, tOut - sg * (0.085 - b)];
+    for (const [hu, dir] of [[s, 1], [e, -1]]) {      // la pile repliee reste contre le tableau, les panneaux deplies partent d'elle
+      const a0 = shown < np ? hu + dir * 0.06 : hu, p = shown < np ? Math.min(pw, (w / 2 - 0.06) / Math.max(1, shown)) : pw;
+      for (let k = 0; k < shown; k++) { const a = a0 + dir * k * p; shutterLeaf(B, d, col, M, a + dir * 0.002, a + dir * (p - 0.002), th, zb + 0.01, zt - 0.01, { st: 0.02 }); }
+      if (shown < np) B.wbox(d, col, hu, hu + dir * 0.06, tOut, tOut - sg * 0.14, zb, zt);
+    }
+    return;
+  }
+  const nl = o.type === 'petite' || w <= 0.6 ? 1 : w > 1.8 ? 4 : 2, per = nl === 1 ? 1 : nl / 2, lw = w / nl;
+  const kind = V.type === 'pleins' ? 'plein' : 'pers', th = kind === 'plein' ? 0.03 : 0.035;
+  for (const [hu, dir] of nl === 1 ? [[s, 1]] : [[s, 1], [e, -1]]) for (let k = 0; k < per; k++) {
+    if (!V.pos) {                           // ouverts a plat contre la facade (les paires se replient l'une sur l'autre)
+      const t0 = tOut + sg * (0.035 + k * th);
+      shutterLeaf(B, d, col, (a, b) => [a, t0 + sg * b], hu - dir * lw, hu, th, zb + 0.01, zt - 0.01, { kind, hingeA: hu, barresOut: true });
+    } else if (V.pos === 'mi') {            // entrouverts : perpendiculaires a la facade
+      shutterLeaf(B, d, col, (a, b) => [hu + dir * (b + k * th), tOut + sg * a], 0, lw, th, zb + 0.01, zt - 0.01, { kind, hingeA: 0 });
+    } else {                                // fermes dans le tableau
+      const t0 = tOut - sg * (0.012 + th), a0 = hu + dir * k * lw;
+      shutterLeaf(B, d, col, (a, b) => [a, t0 + sg * b], a0 + dir * 0.002, a0 + dir * (lw - 0.002), th, zb + 0.005, zt - 0.005, { kind, hingeA: a0 + dir * 0.002 });
+    }
+  }
+}
+// volet roulant : coffre (dans le tableau, en facade ou a l'interieur), coulisses, tablier a lames
+function buildRoller(B, d, V, c) {
+  const { s, e, zb, zt, tOut, tIn, tm, sg, dp } = c, col = V.col, hc = V.hc, dk = shadeOf(col, 0.22);
+  let zTop, u0, u1, tT;
+  if (V.cof === 'facade') {
+    B.wbox(d, col, s - 0.05, e + 0.05, tOut, tOut + sg * (hc + 0.03), zt, zt + hc);
+    B.wbox(d, col, s - 0.045, s, tOut, tOut + sg * 0.08, zb, zt); B.wbox(d, col, e, e + 0.045, tOut, tOut + sg * 0.08, zb, zt);
+    zTop = zt; u0 = s - 0.025; u1 = e + 0.025; tT = tOut + sg * 0.05;
+  } else if (V.cof === 'interieur') {
+    const zc = zt - hc, deep = Math.max(0.08, Math.min(0.22, Math.abs(tIn - tm) - 0.03));
+    B.wbox(d, c.MEN, s, e, tm - dp, tm + dp, zc, zt);                         // face du coffre vue de dehors, au-dessus du dormant
+    B.wbox(d, 'Menuiserie', s, e, tm - sg * dp, tm - sg * deep, zc, zt);       // le coffre, dans la piece
+    B.wbox(d, col, s, s + 0.04, tm + sg * dp, tm + sg * (dp + 0.055), zb, zc); B.wbox(d, col, e - 0.04, e, tm + sg * dp, tm + sg * (dp + 0.055), zb, zc);
+    zTop = zc; u0 = s + 0.02; u1 = e - 0.02; tT = tm + sg * (dp + 0.03);
+  } else {
+    const zc = zt - hc;
+    B.wbox(d, col, s, e, tm + sg * dp, tOut + sg * 0.005, zc, zt);
+    B.wbox(d, col, s, s + 0.045, tOut - sg * 0.075, tOut, zb, zc); B.wbox(d, col, e - 0.045, e, tOut - sg * 0.075, tOut, zb, zc);
+    zTop = zc; u0 = s + 0.025; u1 = e - 0.025; tT = tOut - sg * 0.04;
+  }
+  const H = zTop - zb, zBot = zTop - (V.pos === 'ferme' ? H : V.pos === 'mi' ? H / 2 : 0.05);
+  B.wbox(d, dk, u0, u1, tT - 0.004, tT + 0.004, zBot, zTop);
+  for (let z = zTop; z > zBot + 0.01; z -= 0.04) B.wbox(d, col, u0, u1, tT - 0.007, tT + 0.007, Math.max(zBot, z - 0.035), z);
+  B.wbox(d, col, u0, u1, tT - 0.011, tT + 0.011, zBot, zBot + 0.03);
+}
+// lumiere perdue par les coffres et coulisses des volets roulants (part de l'ouverture masquee)
+function shutterInfo() {
+  let n = 0, a0 = 0, a1 = 0;
+  const cofs = new Set();
+  for (const w of Object.values(PW)) if (w.def.kind === 'ext') for (const o of w.ops) {
+    const V = shutterOf(w.def, o);
+    if (!V || V.type !== 'roulant') continue;
+    const h = o.zt - o.zb, A = o.w * h;
+    n++; a0 += A; cofs.add(V.cof);
+    a1 += V.cof === 'facade' ? A : V.cof === 'interieur' ? o.w * (h - V.hc) : (o.w - 0.09) * (h - V.hc);
+  }
+  if (!n) return '';
+  const p = Math.round((1 - a1 / a0) * 100), cof = STYLE.vcof || 'tableau', head = `${n} volet${n > 1 ? 's' : ''} roulant${n > 1 ? 's' : ''}.`;
+  if (cof === 'facade') return `${head} Coffres posés sur la façade : pas de lumière perdue, mais ils se voient de dehors. Côté rue, c’est souvent refusé par le PLU : à vérifier en mairie.`;
+  if (cof === 'interieur') return `${head} Le coffre intérieur raccourcit chaque fenêtre de 15 à 20 cm, environ ${p} % de lumière en moins. Il se voit dans la pièce, presque pas de dehors.`;
+  return `${head} Le coffre et les coulisses dans le tableau masquent le haut et les côtés du vitrage, environ ${p} % de lumière en moins. La façade change peu.`;
+}
+
+// baie vitree coulissante : dormant alu, vantaux sur deux rails ; le premier est glisse derriere le second (passage ouvert)
+function buildBaie(B, d, o, tm) {
+  const s = o.u - o.w / 2, e = o.u + o.w / 2, zb = o.zb, zt = o.zt;
+  const C = { anthracite: '#3b3f44', blanc: '#efeee9', noir: '#1f2022', bois: 'Bois_pin' }[o.coul || 'anthracite'] || '#3b3f44';
+  const fr = 0.06, n = Math.min(4, Math.max(2, o.vantaux || (o.w > 3.4 ? 4 : 2))), wi = e - s - 2 * fr, pw = wi / n + 0.03;
+  B.wbox(d, C, s, s + fr, tm - 0.05, tm + 0.05, zb, zt); B.wbox(d, C, e - fr, e, tm - 0.05, tm + 0.05, zb, zt);
+  B.wbox(d, C, s, e, tm - 0.05, tm + 0.05, zt - fr, zt); B.wbox(d, C, s, e, tm - 0.05, tm + 0.05, zb, zb + 0.015);
+  for (let k = 0; k < n; k++) {
+    let a = s + fr + (k * wi) / n - (k ? 0.015 : 0);
+    if (k === 0) a = s + fr + wi / n * 0.92;                 // vantail ouvert, glisse derriere son voisin
+    const b = Math.min(e - fr, a + pw), t = tm + (k % 2 ? 0.022 : -0.022), p = 0.045;
+    const z0 = zb + 0.015, z1 = zt - fr;
+    B.wbox(d, C, a, a + p, t - 0.012, t + 0.012, z0, z1); B.wbox(d, C, b - p, b, t - 0.012, t + 0.012, z0, z1);
+    B.wbox(d, C, a, b, t - 0.012, t + 0.012, z0, z0 + 0.07); B.wbox(d, C, a, b, t - 0.012, t + 0.012, z1 - p, z1);
+    B.wbox(d, 'Verre', a + p, b - p, t - 0.003, t + 0.003, z0 + 0.07, z1 - p);
+  }
+}
 function colliderOf(mesh) {
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', mesh.geometry.getAttribute('position').clone());
+  const pos = mesh.geometry.getAttribute('position');
+  g.setAttribute('position', pos && pos.count >= 3 ? pos.clone() : new THREE.Float32BufferAttribute([0, -50, 0, 0.01, -50, 0, 0, -50, 0.01], 3));
   g.computeBoundsTree();
   const c = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
   c.updateMatrixWorld(true);
@@ -2731,15 +2992,17 @@ function registerWall(d, ops) {
 const NSTORE = 'maison-cloisons-neuves';
 const NEUF = {};               // id -> { id, level, axis, t, a0, a1, th }
 function newWallDef(sp) {
-  const z0 = sp.level === 'RDC' ? LVZ[0] : LVZ[1];
+  const z0 = sp.level === 'RDC' ? LVZ[0] : sp.level === 'Combles' ? LVZ[2] + 0.01 : LVZ[1];
   const dm = WDATA.dims || {};
-  const top = sp.level === 'RDC' ? (dm.slab1 ? dm.slab1[0] : 2.74) : (dm.slab2 ? dm.slab2[0] : 5.6);
+  let top = sp.level === 'RDC' ? (dm.slab1 ? dm.slab1[0] : 2.74) : (dm.slab2 ? dm.slab2[0] : 5.6);
+  if (sp.level === 'Combles') top = atticTop(sp);
   const t = sp.t || 0, z1 = sp.h ? Math.min(top, z0 + sp.h) : top;
   const d = { id: sp.id, kind: 'int', neuf: true, level: sp.level, base: sp.id, label: 'Nouvelle cloison', axis: sp.axis,
     tA: t - sp.th / 2, tB: t + sp.th / 2, a0: sp.a0, a1: sp.a1, z0, z1, zFull: top, floor: z0, verr: !!sp.verr,
     faceA: { base: 'Platre', bands: [], outer: false }, faceB: { base: 'Platre', bands: [], outer: false }, openings: [],
     lim: [sp.a0 + 0.05, sp.a1 - 0.05], maxTop: z1 - 0.10 };
   if (sp.axis === 'a') Object.assign(d, { ox: sp.ox, oy: sp.oy, ang: sp.ang });
+  if (sp.level === 'Combles') d.slope = !sp.h;              // pleine hauteur : suit la pente du toit
   d.g0 = { tA: d.tA, tB: d.tB, a0: d.a0, a1: d.a1, z1: d.z1, verr: d.verr };
   d.t0 = sp.t0 ?? t;
   return d;
@@ -2781,7 +3044,7 @@ const wallLabel = (d) => (d.label ? d.label : d.kind !== 'int' ? `${d.name}` : `
 // garde l'ouverture dans le mur, sans chevaucher les autres ; renvoie un message si on a du corriger
 function fitOpening(w, o, idx) {
   if (w.def.kind === 'roof') return fitRoof(w, o, idx);
-  if (ROUGH(o.type)) return fitRough(w, o);
+  if (DRAWN(o.type)) return fitRough(w, o);
   const d = w.def, notes = [];
   const span = d.lim[1] - d.lim[0];
   const w0 = o.w;
@@ -2831,7 +3094,9 @@ function fitRough(w, o) {
   const d = w.def, notes = [], [lo, hi] = roughRange(d), span = d.lim[1] - d.lim[0];
   const clampAll = () => {
     o.w = Math.min(Math.max(o.w, 0.20), span);
-    if (o.type === 'breche') { o.zb = lo; o.zt = hi; } else {
+    if (o.type === 'breche') { o.zb = lo; o.zt = hi; }
+    else if (o.type === 'baie_vitree') { o.zb = lo; o.zt = Math.min(Math.max(o.zt, lo + 1.8), Math.min(hi, d.maxTop)); }
+    else {
       const h = Math.min(Math.max(o.zt - o.zb, 0.20), hi - lo);
       o.zb = Math.min(Math.max(o.zb, lo), hi - h); o.zt = o.zb + h;
     }
@@ -2854,8 +3119,9 @@ function fitRough(w, o) {
   if (eaten.length) {
     clampAll();
     w.ops = w.ops.filter((q) => !eaten.includes(q));
-    notes.push(eaten.length > 1 ? `${eaten.length} ouvertures sont englobées dans la démolition.`
-      : `${TYPE_LABEL[eaten[0].type] || 'Ouverture'} englobée dans la démolition.`);
+    const bv = o.type === 'baie_vitree';
+    notes.push(eaten.length > 1 ? `${eaten.length} ouvertures sont ${bv ? 'remplacées par la baie' : 'englobées dans la démolition'}.`
+      : `${TYPE_LABEL[eaten[0].type] || 'Ouverture'} ${bv ? 'remplacée par la baie' : 'englobée dans la démolition'}.`);
   }
   return { ok: true, notes, idx: w.ops.indexOf(o) };
 }
@@ -2919,6 +3185,12 @@ function renderOuvPanel(msg = '') {
       op.zbRow.hidden = (isDoor(o.type) && o.type !== 'baie') || o.type === 'breche' || (o.type === 'baie'); document.getElementById('op-zb-lbl').hidden = op.zbRow.hidden;
       const arc = o.type === 'trou' || o.type === 'baie';
       op.forme.hidden = !arc; op.formeLbl.hidden = !arc; op.forme.value = o.forme || '';
+      const bv = o.type === 'baie_vitree';
+      for (const id of ['op-vant-lbl', 'op-coul-lbl', 'op-vant', 'op-coul']) document.getElementById(id).hidden = !bv;
+      if (bv) { document.getElementById('op-vant').value = String(o.vantaux || 2); document.getElementById('op-coul').value = o.coul || 'anthracite'; }
+      const hasVol = d.kind === 'ext' && SHUT_T.includes(o.type);
+      for (const id of ['op-vol', 'op-vol-lbl']) document.getElementById(id).hidden = !hasVol;
+      if (hasVol) document.getElementById('op-vol').value = VT_OK.includes(o.vt) ? o.vt : '';
     } else {
       op.name.textContent = wallLabel(d);
       op.meta.textContent = d.kind === 'roof'
@@ -2932,7 +3204,7 @@ function renderOuvPanel(msg = '') {
   const n = changedWalls();
   op.count.textContent = n ? `${n} mur${n > 1 ? 's' : ''} modifié${n > 1 ? 's' : ''}` : 'Ouvertures d’origine';
   op.undo.disabled = !ouvHist.length; op.reset.disabled = !n;
-  refreshOverlay();
+  refreshOverlay(); refreshStyleUI();
 }
 function wallHit(cx, cy) {
   rayAt(cx, cy);
@@ -2968,6 +3240,8 @@ op.type.addEventListener('change', () => applyEdit((o) => {
   if (t === 'petite') o.w = df.w;
   if (t === 'porte_int' && !o.side) { o.side = 1; o.hinge = -1; }
 }));
+document.getElementById('op-vant').addEventListener('change', (e) => applyEdit((o) => { o.vantaux = +e.target.value; }));
+document.getElementById('op-coul').addEventListener('change', (e) => applyEdit((o) => { o.coul = e.target.value; }));
 op.forme.addEventListener('change', () => applyEdit((o) => { if (op.forme.value) o.forme = op.forme.value; else delete o.forme; }));
 const numIn = (el, f) => el.addEventListener('change', () => { const v = parseFloat(el.value); if (Number.isFinite(v)) applyEdit((o) => f(o, v / 100)); else renderOuvPanel(); });
 numIn(op.w, (o, v) => { o.w = v; });
@@ -3065,7 +3339,7 @@ function pickRough(cx, cy) {
   let best = null;
   for (const w of Object.values(PW)) {
     if (!w.group.visible || w.def.kind === 'roof') continue;
-    const d = w.def, rough = w.ops.filter((o) => ROUGH(o.type));
+    const d = w.def, rough = w.ops.filter((o) => DRAWN(o.type));
     if (!rough.length) continue;
     const tm = (d.tA + d.tB) / 2;
     const q = toPlan(d, (d.a0 + d.a1) / 2, tm, 0);
@@ -3082,12 +3356,17 @@ function pickRough(cx, cy) {
 }
 function draftRough(c) {
   const d = c.w.def, [lo, hi] = roughRange(d), tr = wmMode === 'trou';
+  if (wmMode === 'baie') {
+    const a = Math.min(c.u0, c.u1), b = Math.max(c.u0, c.u1);
+    return c.moved && b - a > 0.6 ? { type: 'baie_vitree', u: (a + b) / 2, w: b - a, zb: lo, zt: lo + 2.15, vantaux: b - a > 3.4 ? 4 : 2 }
+      : { type: 'baie_vitree', u: c.u0, w: 2.40, zb: lo, zt: lo + 2.15, vantaux: 2 };
+  }
   if (!c.moved) return tr ? { type: 'trou', u: c.u0, w: 0.80, zb: c.z0 - 0.40, zt: c.z0 + 0.40 } : { type: 'breche', u: c.u0, w: 1.0, zb: lo, zt: hi };
   const a = Math.min(c.u0, c.u1), b = Math.max(c.u0, c.u1);
   return tr ? { type: 'trou', u: (a + b) / 2, w: b - a, zb: Math.min(c.z0, c.z1), zt: Math.max(c.z0, c.z1) } : { type: 'breche', u: (a + b) / 2, w: b - a, zb: lo, zt: hi };
 }
 canvas.addEventListener('pointerdown', (e) => {
-  if (!wallMode || (wmMode !== 'portion' && wmMode !== 'trou') || e.button > 0) return;
+  if (!wallMode || (wmMode !== 'portion' && wmMode !== 'trou' && wmMode !== 'baie') || e.button > 0) return;
   const r = pickRough(e.clientX, e.clientY);
   const hit = r || wallHit(e.clientX, e.clientY);
   if (!hit || hit.w.def.kind === 'roof') return;
@@ -3429,7 +3708,8 @@ function roomLoss(room) {
 function houseLoss() { return ROOMS.filter((r) => r.lvl < 2).reduce((a, r) => a + roomLoss(r), 0); }
 function pickIso(cx, cy) {
   const hit = wallHit(cx, cy);
-  if (!hit || hit.w.def.kind === 'roof') { isoSel = null; renderPanel(); return; }
+  if (hit && hit.w.def.kind === 'roof') { isoSel = { ramp: true }; renderPanel(); return; }
+  if (!hit) { isoSel = null; renderPanel(); return; }
   const w = hit.w, d = w.def;
   const side = faceSeen(d);              // la face tournee vers nous
   const face = side === 'A' ? d.faceA : d.faceB;
@@ -3441,7 +3721,7 @@ function pickIso(cx, cy) {
 }
 // faces visees selon l'etendue choisie
 function isoTargets() {
-  if (!isoSel) return [];
+  if (!isoSel || isoSel.ramp) return [];
   if (isoScope === 'mur') return [{ w: isoSel.w, side: isoSel.side, u0: isoSel.u0, u1: isoSel.u1 }];
   if (isoSel.outer) {
     return Object.values(PW).filter((w) => w.def.kind === 'ext').map((w) => ({ w, side: w.def.faceA.outer ? 'A' : 'B', u0: w.def.a0, u1: w.def.a1 }));
@@ -3452,6 +3732,12 @@ function isoTargets() {
   return out;
 }
 function applyEp(ep) {
+  if (isoSel && isoSel.ramp) {
+    const prev = RAMP.ep; setRamp(ep);
+    casseHist.push({ kind: 'ramp', ep: prev }); lsSet(RSTORE, RAMP.ep);
+    renderPanel(ep ? `Rampants isolés : ${cm(ep)} cm sous la toiture.` : 'Isolation des rampants retirée.');
+    return;
+  }
   const tg = isoTargets(); if (!tg.length) return;
   const snap = isoState(), before = houseLoss(), roomBefore = isoSel.room ? roomLoss(isoSel.room) : 0;
   const touched = new Set();
@@ -3471,6 +3757,23 @@ function renderIso() {
     wp.lvl.textContent = 'Isoler';
     wp.name.textContent = 'Cliquez la face d’un mur';
     wp.meta.textContent = 'Côté pièce : doublage intérieur (laine + plaque), la pièce rétrécit d’autant. Côté dehors : isolation par l’extérieur. La surface perdue s’affiche ici.';
+    return;
+  }
+  if (isoSel.ramp) {
+    wp.lvl.textContent = 'Isolation sous rampants · Combles';
+    wp.name.textContent = 'Dessous de la toiture';
+    wp.meta.textContent = RAMP.ep ? `Isolant actuel : ${cm(RAMP.ep)} cm (laine + plaque)` : 'Pas d’isolant sous la toiture';
+    wp.isoScope.innerHTML = '';
+    wp.isoEps.innerHTML = '';
+    for (const c of [0, 10, 15, 20, 25, 30, 35]) {
+      const b = document.createElement('button'); b.textContent = c ? `${c} cm` : 'Aucun';
+      b.setAttribute('aria-pressed', String(Math.round(RAMP.ep * 100) === c));
+      b.addEventListener('click', () => applyEp(c / 100));
+      wp.isoEps.append(b);
+    }
+    wp.isoEp.value = cm(RAMP.ep || 0.2);
+    const a0 = atticCarrez(0), a1 = atticCarrez(RAMP.ep);
+    wp.isoInfo.textContent = `Surface des combles où l’on tient debout (1,80 m et plus) : ${a0.toFixed(1).replace('.', ',')} m²${RAMP.ep ? ` → ${a1.toFixed(1).replace('.', ',')} m² isolés` : ''}.`;
     return;
   }
   const d = isoSel.w.def, ep = liningAt(isoSel.w, isoSel.side, (isoSel.u0 + isoSel.u1) / 2);
@@ -3505,11 +3808,92 @@ function renderIso() {
 wp.isoEp.addEventListener('change', () => { const v = parseFloat(wp.isoEp.value); if (Number.isFinite(v)) applyEp(Math.min(40, Math.max(0, v)) / 100); });
 function refreshIsoOverlay() {
   ovWall.visible = false;
-  if (!isoSel) { ovOpen.visible = false; return; }
+  if (!isoSel || isoSel.ramp) { ovOpen.visible = false; return; }
   const d = isoSel.w.def, ep = liningAt(isoSel.w, isoSel.side, (isoSel.u0 + isoSel.u1) / 2);
   const t = isoSel.side === 'A' ? d.tA - ep : d.tB + ep, zr = isoSel.outer ? [d.z0, d.z1] : [d.floor ?? d.z0, d.kind === 'ext' ? d.z1 - 0.21 : d.z1];
   ovTint(0xe0a020, 0.14);
   placeBox(ovOpen, d, isoSel.u0, isoSel.u1, t - 0.012, t + 0.012, zr[0], zr[1]);
+}
+
+
+// ---------------------------------------------------------------- combles : dessous de toiture, isolation sous rampants, surface ou l'on tient debout
+const RSTORE = 'maison-rampants';
+const RAMP = { ep: 0, group: null, col: null, area: 0, carrez: {} };
+let _rp = null;
+function roofPlanes() {
+  if (_rp) return _rp;
+  const l = Object.values(PW).filter((w) => w.def.kind === 'roof').map((w) => {
+    const d = w.def, O = d.O, N = d.N;
+    return { N, z: (x, y) => O.z - (N.x * (x - O.x) + N.y * (y - O.y)) / N.z };
+  });
+  if (l.length) _rp = l;
+  return l;
+}
+// dessous de la toiture (ou de son isolation) a l'aplomb de (x, y)
+function roofZ(x, y, ep = RAMP.ep) { let z = Infinity; for (const p of roofPlanes()) z = Math.min(z, p.z(x, y) - ep / p.N.z); return z; }
+function atticTop(sp) {
+  const t = sp.t || 0, pt = (u) => (sp.axis === 'x' ? [u, t] : sp.axis === 'y' ? [t, u]
+    : [sp.ox + u * Math.cos(sp.ang) - t * Math.sin(sp.ang), sp.oy + u * Math.sin(sp.ang) + t * Math.cos(sp.ang)]);
+  let m = -Infinity;
+  for (let k = 0; k <= 40; k++) { const P = pt(sp.a0 + ((sp.a1 - sp.a0) * k) / 40); m = Math.max(m, roofZ(P[0], P[1]) - 0.005); }
+  return Math.max(LVZ[2] + 0.6, m);
+}
+function clipPoly(poly, f) {            // garde la partie ou f(p) <= 0
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length], fa = f(a), fb = f(b);
+    if (fa <= 0) out.push(a);
+    if ((fa <= 0) !== (fb <= 0)) { const t = fa / (fa - fb); out.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]); }
+  }
+  return out;
+}
+function buildRampants() {
+  if (RAMP.group) { scene.remove(RAMP.group); RAMP.group.traverse((o) => o.geometry?.dispose()); RAMP.group = null; delete groups.Rampants; }
+  if (RAMP.col) { RAMP.col.geometry.dispose(); RAMP.col = null; }
+  RAMP.area = 0;
+  if (!(RAMP.ep > 0)) return;
+  const r = ROOMS.find((q) => q.lvl === 2).r, pls = roofPlanes(), B = new Builder();
+  pls.forEach((pk, k) => {
+    const zk = (p) => pk.z(p[0], p[1]) - RAMP.ep / pk.N.z;
+    let poly = [[r[0], r[2]], [r[1], r[2]], [r[1], r[3]], [r[0], r[3]]];
+    for (let j = 0; j < pls.length && poly.length >= 3; j++) {
+      if (j === k) continue;
+      const pj = pls[j];
+      poly = clipPoly(poly, (p) => zk(p) - (pj.z(p[0], p[1]) - RAMP.ep / pj.N.z));
+    }
+    if (poly.length < 3) return;
+    const n = [-pk.N.x, -pk.N.y, -pk.N.z], P = poly.map((p) => [p[0], p[1], zk(p)]);
+    for (let i = 1; i < P.length - 1; i++) {
+      B.vtri('Platre', P[0], P[i], P[i + 1], n);
+      const a = new THREE.Vector3(...P[0]), b = new THREE.Vector3(...P[i]), c = new THREE.Vector3(...P[i + 1]);
+      RAMP.area += b.sub(a).cross(c.sub(a)).length() / 2;
+    }
+  });
+  const mesh = B.mesh();
+  RAMP.group = new THREE.Group(); RAMP.group.name = 'Rampants'; RAMP.group.add(mesh);
+  scene.add(RAMP.group); groups.Rampants = RAMP.group;
+  RAMP.col = colliderOf(mesh);
+}
+// surface au sol des combles ou la hauteur sous toiture atteint 1,80 m (surface « loi Carrez »)
+function atticCarrez(ep = RAMP.ep) {
+  const key = ep.toFixed(3);
+  if (RAMP.carrez[key] !== undefined) return RAMP.carrez[key];
+  const r = ROOMS.find((q) => q.lvl === 2).r, st = 0.05, f0 = LVZ[2] + 0.01;
+  let n = 0;
+  for (let x = r[0] + st / 2; x < r[1]; x += st) for (let y = r[2] + st / 2; y < r[3]; y += st) if (roofZ(x, y, ep) - f0 >= 1.8) n++;
+  return (RAMP.carrez[key] = n * st * st);
+}
+function setRamp(ep) {
+  RAMP.ep = Math.max(0, Math.min(0.4, ep || 0));
+  buildRampants();
+  for (const [id, w] of Object.entries(PW)) {
+    if (!w.def.slope || !NEUF[id]) continue;
+    const top = atticTop(NEUF[id]);
+    Object.assign(w.def, { z1: top, zFull: top, maxTop: top - 0.10 });
+    rebuildWall(id);
+  }
+  applyCut(mode === 'maquette' ? cut : 'all');
+  lastRoom = '';
 }
 
 // ---------------------------------------------------------------- pieces : rectangles relies aux faces des murs (suivent les retouches)
@@ -3549,8 +3933,8 @@ function restoreNew(keep) {
   saveNeuf(); saveOuv(); saveFin(); save();
 }
 function buildLevel() {
-  if (mode === 'visite') return walker.pos.y > LVZ[1] - 0.6 ? 1 : 0;
-  return String(cut) === '1' ? 1 : 0;
+  if (mode === 'visite') return walker.pos.y > LVZ[2] - 0.3 ? 2 : walker.pos.y > LVZ[1] - 0.6 ? 1 : 0;
+  return String(cut) === '2' ? 2 : String(cut) === '1' ? 1 : 0;
 }
 function floorPoint(cx, cy, lvl) {
   rayAt(cx, cy);
@@ -3560,7 +3944,7 @@ function floorPoint(cx, cy, lvl) {
 }
 const snap5 = (v) => Math.round(v / 0.05) * 0.05;
 function draftWall(c) {
-  const lvlName = c.lvl ? 'Etage1' : 'RDC';
+  const lvlName = ['RDC', 'Etage1', 'Combles'][c.lvl] || 'RDC';
   const dx = c.p1.x - c.p0.x, dy = c.p1.y - c.p0.y;
   let ang = Math.atan2(dy, dx);
   const deg = (ang * 180) / Math.PI, snapA = Math.round(deg / 45) * 45;
@@ -3578,6 +3962,10 @@ function draftWall(c) {
   // les bouts s'accrochent aux faces des murs traverses par l'axe
   const d = newWallDef({ ...sp, id: '__brouillon' });
   const hits = lineFaceHits(d);
+  if (lvlName === 'Combles') {            // dans les combles, les bouts s'accrochent aussi aux murs bas (jambettes, pignons)
+    const r = ROOMS.find((q) => q.lvl === 2).r;
+    for (const t of [0, 1]) { const c2 = clipLine(d, (d.tA + d.tB) / 2, r); if (c2) hits.push(c2[t]); }
+  }
   sp.a0 = snapTo(sp.a0, hits, 0.3); sp.a1 = snapTo(sp.a1, hits, 0.3);
   if (sp.a1 < sp.a0) [sp.a0, sp.a1] = [sp.a1, sp.a0];
   return sp;
@@ -3585,7 +3973,7 @@ function draftWall(c) {
 canvas.addEventListener('pointerdown', (e) => {
   if (!wallMode || wmMode !== 'construire' || e.button > 0) return;
   const lvl = buildLevel(), p = floorPoint(e.clientX, e.clientY, lvl);
-  if (!p || p.x < -0.1 || p.x > W + 0.1 || p.y < -0.1 || p.y > D + 0.1) return;
+  if (!p || p.x < -0.2 || p.x > W + 0.2 || p.y < -0.2 || p.y > D + 0.2) return;
   e.stopImmediatePropagation();
   canvas.setPointerCapture(e.pointerId);
   buildDrag = { id: e.pointerId, lvl, p0: p, p1: p, x0: e.clientX, y0: e.clientY, moved: false };
@@ -3634,19 +4022,39 @@ btnOuv.addEventListener('click', () => toggleOuvMode(!ouvMode));
 
 // ---------------------------------------------------------------- style des menuiseries exterieures (toute la maison)
 const STSTORE = 'maison-style';
-const STYLE = { fen: null, volet: null, porte: null };
+const STYLE = { fen: null, vtype: null, volet: null, vcof: null, vpos: null, porte: null };
 const STYLE_OPTS = {
   fen: [['', 'Blanc (d’origine)'], ['#3b3f44', 'Gris anthracite'], ['#1f2022', 'Noir'], ['Bois_pin', 'Bois clair'], ['Noyer', 'Bois foncé'], ['#6f8a74', 'Vert'], ['#6d8291', 'Bleu gris']],
-  volet: [['', 'Rouges (d’origine)'], ['#5e7d5a', 'Verts'], ['#4f6d8a', 'Bleus'], ['#8b9196', 'Gris'], ['#3b3f44', 'Anthracite'], ['#eeeeea', 'Blancs'], ['Bois_pin', 'Bois'], ['aucun', 'Sans volets']],
+  vtype: [['', 'Persiennes repliées en tableau (d’origine)'], ['battants', 'Persiennes battantes'], ['pleins', 'Volets battants pleins'], ['roulant', 'Volets roulants électriques'], ['aucun', 'Sans volets']],
+  volet: [['', 'Rouges (d’origine)'], ['#5e7d5a', 'Verts'], ['#4f6d8a', 'Bleus'], ['#8b9196', 'Gris'], ['#3b3f44', 'Anthracite'], ['#eeeeea', 'Blancs'], ['#d8cdb3', 'Beiges'], ['Bois_pin', 'Bois clair'], ['Noyer', 'Bois foncé']],
+  vcof: [['', 'Dans le tableau, sous le linteau'], ['facade', 'Posé sur la façade'], ['interieur', 'À l’intérieur (bloc-baie)']],
+  vpos: [['', 'Ouverts'], ['mi', 'À moitié'], ['ferme', 'Fermés']],
   porte: [['', 'D’origine'], ['Noyer', 'Bois foncé'], ['#3b3f44', 'Anthracite'], ['#8c2f2a', 'Rouge'], ['#2f4f6f', 'Bleu'], ['#3f5f45', 'Vert'], ['#efeee9', 'Blanche']],
 };
+const VOL_OWN = [['', 'Comme le reste de la maison'], ['tableau', 'Persiennes repliées en tableau'], ['battants', 'Persiennes battantes'], ['pleins', 'Volets battants pleins'], ['roulant', 'Volet roulant électrique'], ['aucun', 'Sans volet']];
+const oldStyle = (st) => { if (!st || st.volet !== 'aucun') return st; const o = { ...st }; delete o.volet; o.vtype = o.vtype || 'aucun'; return o; };   // ancien « Sans volets » dans les couleurs
 function styleState() { const o = {}; for (const k of Object.keys(STYLE)) if (STYLE[k]) o[k] = STYLE[k]; return o; }
 function applyStyle(st) {
+  st = oldStyle(st);
   const before = JSON.stringify(STYLE);
   for (const k of Object.keys(STYLE)) STYLE[k] = (st && STYLE_OPTS[k].some(([v]) => v && v === st[k])) ? st[k] : null;
   if (JSON.stringify(STYLE) !== before) for (const [id, w] of Object.entries(PW)) if (w.def.kind === 'ext') rebuildWall(id, false);
   for (const k of Object.keys(STYLE)) { const el = document.getElementById(`st-${k}`); if (el) el.value = STYLE[k] || ''; }
+  refreshStyleUI();
 }
+// lignes visibles selon le type de volet, et ce que coutent les coffres en lumiere
+function refreshStyleUI() {
+  const own = Object.values(PW).filter((w) => w.def.kind === 'ext').flatMap((w) => w.ops.filter((o) => SHUT_T.includes(o.type) && VT_OK.includes(o.vt)).map((o) => o.vt));
+  const roll = STYLE.vtype === 'roulant' || own.includes('roulant'), none = STYLE.vtype === 'aucun' && own.every((v) => v === 'aucun');
+  for (const id of ['st-vcof', 'st-vcof-lbl']) document.getElementById(id).hidden = !roll;
+  for (const id of ['st-volet', 'st-volet-lbl', 'st-vpos', 'st-vpos-lbl']) document.getElementById(id).hidden = none;
+  const o0 = document.querySelector('#st-volet option[value=""]');
+  if (o0) o0.textContent = STYLE.vtype === 'roulant' ? 'Comme les fenêtres' : 'Rouges (d’origine)';
+  const info = document.getElementById('st-info'), t = shutterInfo();
+  info.textContent = t; info.hidden = !t;
+}
+document.getElementById('op-vol').innerHTML = VOL_OWN.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+document.getElementById('op-vol').addEventListener('change', (e) => applyEdit((o) => { if (e.target.value) o.vt = e.target.value; else delete o.vt; }));
 for (const k of Object.keys(STYLE)) {
   const el = document.getElementById(`st-${k}`);
   el.innerHTML = STYLE_OPTS[k].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
@@ -3771,7 +4179,7 @@ function finRecord() { finHist.push(JSON.parse(JSON.stringify(finState()))); if 
 
 // piece au contact d'une face de mur, au point u (sonde a 5 cm devant la face)
 function roomAt(lvl, x, y) { return ROOMS.find((r) => r.lvl === lvl && x > r.r[0] && x < r.r[1] && y > r.r[2] && y < r.r[3]) || null; }
-const LVL_N = { RDC: 0, Etage1: 1 };
+const LVL_N = { RDC: 0, Etage1: 1, Combles: 2 };
 function faceRoom(d, side, u) {
   const t = side === 'A' ? d.tA - 0.05 : d.tB + 0.05;
   const [x, y] = toPlan(d, u, t, 0);
@@ -3977,15 +4385,18 @@ function getState() {
   const geo = geoState(); if (Object.keys(geo).length) st.geo = geo;
   const iso = isoState(); if (Object.keys(iso).length) st.iso = iso;
   const sty = styleState(); if (Object.keys(sty).length) st.style = sty;
+  if (RAMP.ep > 0) st.ramp = r3(RAMP.ep);
   return st;
 }
-const isEmptyState = (st) => !st.murs.length && !Object.keys(st.ouv).length && !Object.keys(st.meubles).length && !st.fin && !st.neuf && !st.geo && !st.iso && !(st.ajouts && st.ajouts.length) && !st.style;
+const isEmptyState = (st) => !st.murs.length && !Object.keys(st.ouv).length && !Object.keys(st.meubles).length && !st.fin && !st.neuf && !st.geo && !st.iso && !(st.ajouts && st.ajouts.length) && !st.style && !st.ramp;
 const sameState = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function applyState(st, persist, keepHist = false) {
   st = st || {};
   if (selWall) select(null);
   wpSel = null; selW = null; selI = -1;
   if (selFurn) selectFurn(null);
+  if ((st.ramp || 0) !== RAMP.ep) setRamp(st.ramp || 0);
+  if (persist) lsSet(RSTORE, RAMP.ep);
   const want = Object.fromEntries((st.neuf || []).map((sp) => [sp.id, sp]));
   for (const id of Object.keys(NEUF)) if (!want[id] || JSON.stringify(want[id]) !== JSON.stringify(NEUF[id])) removeNewWall(id);
   for (const sp of Object.values(want)) if (!NEUF[sp.id]) addNewWall(sp, []);
@@ -4050,11 +4461,16 @@ function summary(st) {
   if (nN) parts.push(`${nN} cloison${nN > 1 ? 's' : ''} neuve${nN > 1 ? 's' : ''}`);
   const nG = Object.keys(st.geo || {}).length;
   if (nG) parts.push(`${nG} cloison${nG > 1 ? 's' : ''} retouchée${nG > 1 ? 's' : ''}`);
-  if (st.style) parts.push('menuiseries recolorées');
+  if (st.style) {
+    const sy = oldStyle(st.style);
+    if (sy.vtype) parts.push('volets changés');
+    if (sy.fen || sy.volet || sy.porte) parts.push('menuiseries recolorées');
+  }
   const nA = (st.ajouts || []).length;
   if (nA) parts.push(`${nA} élément${nA > 1 ? 's' : ''} ajouté${nA > 1 ? 's' : ''}`);
   const nI = Object.keys(st.iso || {}).length;
   if (nI) parts.push(`${nI} mur${nI > 1 ? 's' : ''} isolé${nI > 1 ? 's' : ''}`);
+  if (st.ramp) parts.push('rampants isolés');
   const nM = Object.keys(st.meubles).length;
   if (nM) parts.push(`${nM} meuble${nM > 1 ? 's' : ''} déplacé${nM > 1 ? 's' : ''} ou enlevé${nM > 1 ? 's' : ''}`);
   return parts.join(' · ') || 'Aucune modification';
@@ -4134,7 +4550,7 @@ async function unpack(code) {
   const raw = kind === 'z' ? new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()) : u8;
   const st = JSON.parse(new TextDecoder().decode(raw));
   if (!st || st.v !== 1) throw new Error('version');
-  const neuf = Array.isArray(st.neuf) ? st.neuf.filter((sp) => sp && /^Neuf_/.test(sp.id) && ['RDC', 'Etage1'].includes(sp.level) && ['x', 'y', 'a'].includes(sp.axis)
+  const neuf = Array.isArray(st.neuf) ? st.neuf.filter((sp) => sp && /^Neuf_/.test(sp.id) && ['RDC', 'Etage1', 'Combles'].includes(sp.level) && ['x', 'y', 'a'].includes(sp.axis)
     && [sp.t, sp.a0, sp.a1, sp.th].every(Number.isFinite) && sp.a1 - sp.a0 > 0.2 && sp.a1 - sp.a0 < 14 && sp.th >= 0.03 && sp.th <= 0.5
     && (sp.axis !== 'a' || [sp.ox, sp.oy, sp.ang].every(Number.isFinite)) && (sp.h === undefined || Number.isFinite(sp.h))) : [];
   const geo = Object.fromEntries(Object.entries(st.geo || {}).filter(([k, g]) => PW[k] && PW[k].def.kind === 'int' && g && ['tA', 'tB', 'a0', 'a1', 'z1'].every((q) => Number.isFinite(g[q]))));
@@ -4144,8 +4560,9 @@ async function unpack(code) {
   const ajouts = Array.isArray(st.ajouts) ? st.ajouts.filter((it) => it && CAT_OF[it.c] && [it.x, it.y, it.rot, it.w, it.d, it.h].every(Number.isFinite)
     && [0, 1, 2].includes(it.lvl) && FINS[it.fin] && (it.z0 === undefined || Number.isFinite(it.z0))).slice(0, 400)
     .map((it) => ({ uid: String(it.uid).slice(0, 12), c: it.c, lvl: it.lvl, x: it.x, y: it.y, rot: it.rot, w: it.w, d: it.d, h: it.h, fin: it.fin, ...(it.z0 !== undefined ? { z0: it.z0 } : {}) })) : [];
-  const style = Object.fromEntries(Object.entries(st.style || {}).filter(([k, v]) => STYLE_OPTS[k] && STYLE_OPTS[k].some(([q]) => q && q === v)));
-  return { v: 1, ...(Object.keys(style).length ? { style } : {}), ...(ajouts.length ? { ajouts } : {}), ...(neuf.length ? { neuf } : {}), ...(Object.keys(geo).length ? { geo } : {}), ...(Object.keys(iso).length ? { iso } : {}), murs: Array.isArray(st.murs) ? st.murs.filter((k) => walls[k] || neuf.some((sp) => sp.id === k)) : [], ouv: Object.fromEntries(Object.entries(st.ouv || {}).filter(([k]) => ok(k))),
+  const style = Object.fromEntries(Object.entries(oldStyle(st.style) || {}).filter(([k, v]) => STYLE_OPTS[k] && STYLE_OPTS[k].some(([q]) => q && q === v)));
+  const ramp = Number.isFinite(st.ramp) && st.ramp > 0 && st.ramp <= 0.4 ? st.ramp : 0;
+  return { v: 1, ...(ramp ? { ramp } : {}), ...(Object.keys(style).length ? { style } : {}), ...(ajouts.length ? { ajouts } : {}), ...(neuf.length ? { neuf } : {}), ...(Object.keys(geo).length ? { geo } : {}), ...(Object.keys(iso).length ? { iso } : {}), murs: Array.isArray(st.murs) ? st.murs.filter((k) => walls[k] || neuf.some((sp) => sp.id === k)) : [], ouv: Object.fromEntries(Object.entries(st.ouv || {}).filter(([k]) => ok(k))),
     meubles: Object.fromEntries(Object.entries(st.meubles || {}).filter(([k]) => furn[k])),
     ...(st.fin ? { fin: { murs: Object.fromEntries(Object.entries(st.fin.murs || {}).filter(([k]) => ok(k))), sols: Object.fromEntries(Object.entries(st.fin.sols || {}).filter(([k]) => FLOORS[k])) } } : {}), nom: typeof st.nom === 'string' ? st.nom.slice(0, 40) : '' };
 }
@@ -4227,23 +4644,39 @@ function travauxLines() {
     const d = w.def, orig = new Set((w.orig || []).map(keyO)), now = new Set(w.ops.map(keyO));
     if (d.kind === 'roof') { cnt.velux += w.ops.filter((o) => !orig.has(keyO(o))).length; continue; }
     if (d.kind === 'ext') {
-      const nNew = w.ops.filter((o) => !ROUGH(o.type) && !orig.has(keyO(o))).length, nGone = (w.orig || []).filter((o) => !now.has(keyO(o))).length;
+      const nNew = w.ops.filter((o) => !DRAWN(o.type) && !orig.has(keyO(o))).length, nGone = (w.orig || []).filter((o) => !now.has(keyO(o))).length;
       const changedN = Math.min(nNew, nGone); cnt.modif += changedN; cnt.cree += nNew - changedN; cnt.ferme += Math.max(0, nGone - nNew);
     } else {
       cnt.portes += w.ops.filter((o) => o.type === 'porte_int' && !orig.has(keyO(o))).length;
       for (const o of w.ops) if (o.type === 'verriere' && !orig.has(keyO(o))) { cnt.verr++; cnt.verrA += o.w * (o.zt - o.zb); }
     }
   }
+  const baies = [];
+  for (const w of Object.values(PW)) for (const o of w.ops) if (o.type === 'baie_vitree') baies.push({ w: o.w, ext: w.def.kind === 'ext' });
+  add(ouv, 'baie_vitree', 'Baies vitrées coulissantes', baies.length, 'u', baies.map((b) => `${cm(b.w)} cm`).join(', '),
+    baies.some((b) => b.ext) ? 'Ouverture dans un mur porteur : étude et linteau à prévoir.' : '');
   add(ouv, 'ouv_cree', 'Fenêtres ou portes créées en façade', cnt.cree, 'u', '', cnt.cree ? 'Déclaration préalable en mairie probable.' : '');
   add(ouv, 'ouv_modif', 'Fenêtres ou portes modifiées (taille, type, place)', cnt.modif, 'u');
   add(ouv, 'ouv_ferme', 'Ouvertures rebouchées', cnt.ferme, 'u');
   add(ouv, 'velux', 'Fenêtres de toit', cnt.velux, 'u');
   add(ouv, 'porte_int', 'Portes intérieures à poser', cnt.portes, 'u');
-  const sty = styleState();
-  if (Object.keys(sty).length) {
+  if (STYLE.fen || STYLE.porte || (STYLE.volet && !STYLE.vtype)) {
     const nOuv = Object.values(PW).filter((w) => w.def.kind === 'ext').reduce((a, w) => a + w.ops.filter((o) => !ROUGH(o.type) && o.type !== 'baie').length, 0);
     add(ouv, 'peint_menuis', 'Menuiseries extérieures à repeindre ou remplacer (couleur)', nOuv, 'u');
   }
+  // volets neufs (les persiennes d'origine ne comptent pas)
+  const vol = { roulant: [], battants: 0, pleins: 0, tableau: 0 };
+  for (const w of Object.values(PW)) if (w.def.kind === 'ext') for (const o of w.ops) {
+    const V = shutterOf(w.def, o);
+    if (!V) continue;
+    if (V.type === 'roulant') vol.roulant.push(w.def.side); else if (V.type !== 'tableau') vol[V.type]++;
+  }
+  const dpM = 'Changement d’aspect de la façade : déclaration préalable en mairie.';
+  const cofL = { tableau: 'coffre dans le tableau', facade: 'coffre posé sur la façade', interieur: 'coffre intérieur (bloc-baie)' }[STYLE.vcof || 'tableau'];
+  add(ouv, 'vol_roulant', 'Volets roulants électriques', vol.roulant.length, 'u', `${cofL}, avec une alimentation électrique à chaque fenêtre`,
+    STYLE.vcof === 'facade' && vol.roulant.includes('N') ? 'Coffres apparents côté rue : souvent refusés par le PLU, à vérifier en mairie.' : dpM);
+  add(ouv, 'vol_battants', 'Persiennes battantes', vol.battants, 'u', '', dpM);
+  add(ouv, 'vol_pleins', 'Volets battants pleins', vol.pleins, 'u', '', dpM);
   // --- cloisons et verrieres
   const clo = sec('Cloisons');
   const neuves = Object.values(PW).filter((w) => w.def.neuf && !(walls[w.def.id] && walls[w.def.id].removed));
@@ -4268,6 +4701,8 @@ function travauxLines() {
     const [kind, ep] = k.split('_');
     add(iso, `iso_${k}`, kind === 'ext' ? `Isolation par l’extérieur ${ep} cm` : `Doublage intérieur isolant ${ep} cm`, a, 'm²');
   }
+  if (RAMP.ep > 0) add(iso, `ramp_${Math.round(RAMP.ep * 100)}`, `Isolation sous rampants ${cm(RAMP.ep)} cm`, RAMP.area, 'm²', '',
+    `Combles : ${atticCarrez(0).toFixed(1).replace('.', ',')} m² à 1,80 m et plus avant, ${atticCarrez().toFixed(1).replace('.', ',')} m² après.`);
   const hl = houseLoss();
   if (hl > 0.01) iso.note = `Surface habitable perdue par les doublages : ${m2(hl)}.`;
   // --- finitions
@@ -4356,6 +4791,125 @@ document.getElementById('pj-recap').addEventListener('click', () => { renderReca
 document.getElementById('recap-close').addEventListener('click', () => { document.getElementById('recap').hidden = true; });
 document.getElementById('recap-print').addEventListener('click', () => window.print());
 
+
+// ---------------------------------------------------------------- plan cote : coupe a 1 m au-dessus du sol, a imprimer ou partager
+let planLvl = 0;
+const PLAN_LV = [['RDC', 'Rez-de-chaussée'], ['Etage1', '1er étage'], ['Combles', 'Combles']];
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function planSVG(lvl) {
+  const L = PLAN_LV[lvl][0], fl = LVZ[lvl] + (lvl === 2 ? 0.01 : 0), hc = fl + 1.0, T = (WDATA.dims && WDATA.dims.T) || 0.4;
+  const X = (x) => x, Y = (y) => (D - y);                         // nord (rue) en haut
+  const pt = (p) => `${X(p[0]).toFixed(3)},${Y(p[1]).toFixed(3)}`;
+  const poly = (pts, attrs) => `<polygon points="${pts.map(pt).join(' ')}" ${attrs}/>`;
+  const rectW = (d, u0, u1, t0, t1, attrs) => poly([toPlan(d, u0, t0, 0), toPlan(d, u1, t0, 0), toPlan(d, u1, t1, 0), toPlan(d, u0, t1, 0)], attrs);
+  const line = (a, b, attrs) => `<line x1="${X(a[0]).toFixed(3)}" y1="${Y(a[1]).toFixed(3)}" x2="${X(b[0]).toFixed(3)}" y2="${Y(b[1]).toFixed(3)}" ${attrs}/>`;
+  const text = (x, y, t, size, attrs = '') => `<text x="${X(x).toFixed(3)}" y="${Y(y).toFixed(3)}" font-size="${size}" ${attrs}>${esc(t)}</text>`;
+  const out = [];
+  const ext = lvl === 2 ? 'Etage1' : L;
+  // murs
+  for (const w of Object.values(PW)) {
+    const d = w.def;
+    if (d.kind === 'roof' || (d.level !== L && !(lvl === 2 && d.kind === 'ext' && d.level === ext))) continue;
+    if (lvl === 2 && d.kind === 'ext') { out.push(rectW(d, d.a0, d.a1, d.tA, d.tB, 'fill="#d9d6d0" stroke="none"')); continue; }
+    const removed = walls[d.id] && walls[d.id].removed;
+    if (removed) { out.push(rectW(d, d.a0, d.a1, d.tA, d.tB, 'fill="none" stroke="#c0392b" stroke-width="0.02" stroke-dasharray="0.08 0.05"')); continue; }
+    const cutOps = w.ops.filter((o) => o.zb < hc && o.zt > hc);
+    let segs = [[d.a0, d.a1]];
+    for (const o of cutOps) segs = cutOut(segs.map(([a, b]) => ({ u0: a, u1: b })), o.u - o.w / 2, o.u + o.w / 2).map((q) => [q.u0, q.u1]);
+    const fill = d.neuf ? '#2b6cd1' : '#33302c';
+    for (const [a, b] of segs) if (b - a > 0.005) out.push(rectW(d, a, b, d.tA, d.tB, `fill="${fill}" stroke="none"`));
+    // doublages
+    for (const side of ['A', 'B']) for (const l of (w.iso && w.iso[side]) || []) {
+      const t0 = side === 'A' ? d.tA - l.ep : d.tB, t1 = side === 'A' ? d.tA : d.tB + l.ep;
+      let ls = [[l.u0, l.u1]];
+      for (const o of cutOps) ls = cutOut(ls.map(([a, b]) => ({ u0: a, u1: b })), o.u - o.w / 2, o.u + o.w / 2).map((q) => [q.u0, q.u1]);
+      for (const [a, b] of ls) if (b - a > 0.005) out.push(rectW(d, Math.max(a, d.a0), Math.min(b, d.a1), t0, t1, 'fill="#e9c46a" stroke="none"'));
+    }
+    // ouvertures coupees
+    for (const o of cutOps) {
+      const s0 = o.u - o.w / 2, e0 = o.u + o.w / 2, tm = (d.tA + d.tB) / 2;
+      if (ROUGH(o.type)) { out.push(rectW(d, s0, e0, d.tA, d.tB, 'fill="none" stroke="#c0392b" stroke-width="0.02" stroke-dasharray="0.08 0.05"')); continue; }
+      if (o.type === 'baie') continue;
+      if (o.type === 'porte_int' || o.type === 'porte') {
+        const side = o.type === 'porte' ? (d.faceA.outer ? 1 : -1) : (o.side || 1), hinge = o.type === 'porte' ? -1 : (o.hinge || -1);
+        const face = side > 0 ? d.tB : d.tA, hu = hinge < 0 ? s0 : e0, ou = hinge < 0 ? e0 : s0;
+        const H = toPlan(d, hu, face, 0), Lf = toPlan(d, hu, face + side * o.w, 0), J = toPlan(d, ou, face, 0);
+        out.push(line(H, Lf, 'stroke="#33302c" stroke-width="0.025"'));
+        const cr = (Lf[0] - H[0]) * (J[1] - H[1]) - (Lf[1] - H[1]) * (J[0] - H[0]);
+        out.push(`<path d="M ${pt(Lf)} A ${o.w.toFixed(3)} ${o.w.toFixed(3)} 0 0 ${cr > 0 ? 0 : 1} ${pt(J)}" fill="none" stroke="#33302c" stroke-width="0.012"/>`);
+        continue;
+      }
+      // fenetres, portes-fenetres, baies vitrees, verrieres : deux traits dans l'epaisseur
+      for (const dt of [-0.03, 0.03]) out.push(line(toPlan(d, s0, tm + dt, 0), toPlan(d, e0, tm + dt, 0), 'stroke="#33302c" stroke-width="0.012"'));
+      for (const uu of [s0, e0]) out.push(line(toPlan(d, uu, d.tA, 0), toPlan(d, uu, d.tB, 0), 'stroke="#33302c" stroke-width="0.012"'));
+    }
+  }
+  if (lvl === 2) {     // pied des rampants (jambettes) et ligne ou l'on tient debout
+    const r = ROOMS.find((q) => q.lvl === 2).r;
+    out.push(poly([[r[0], r[2]], [r[1], r[2]], [r[1], r[3]], [r[0], r[3]]], 'fill="none" stroke="#33302c" stroke-width="0.05"'));
+    // zone ou l'on tient debout : intersection des demi-plans « dessous du pan a 1,80 m ou plus » (toit a croupes = convexe)
+    let zone = [[r[0], r[2]], [r[1], r[2]], [r[1], r[3]], [r[0], r[3]]];
+    for (const pl of roofPlanes()) zone = clipPoly(zone, (q) => 1.8 - (pl.z(q[0], q[1]) - RAMP.ep / pl.N.z - (LVZ[2] + 0.01)));
+    if (zone.length >= 3) out.push(poly(zone, 'fill="#2b6cd1" fill-opacity="0.08" stroke="#2b6cd1" stroke-width="0.015" stroke-dasharray="0.1 0.06"'));
+  }
+  // meubles et equipements (empreinte au sol)
+  if (document.getElementById('plan-meubles').checked) {
+    for (const f of Object.values(furn)) {
+      if (!present(f) || (f.level || 'RDC') !== L) continue;
+      const w = f.ajout ? f.it.w : f.w, dd = f.ajout ? f.it.d : f.d;
+      if (w * dd < 0.01) continue;
+      const c = Math.cos(f.rot), sn = Math.sin(f.rot), cx = f.x, cy = -f.z;
+      const P = [[-w / 2, -dd / 2], [w / 2, -dd / 2], [w / 2, dd / 2], [-w / 2, dd / 2]].map(([a, b]) => [cx + a * c + b * sn, cy - (-a * sn + b * c)]);
+      out.push(poly(P, `fill="${f.ajout ? '#2b6cd1' : '#8a8f94'}" fill-opacity="0.06" stroke="#8a8f94" stroke-width="0.012"`));
+      if (f.ajout && w > 0.55 && dd > 0.3) out.push(text(cx, cy - 0.03, f.name, 0.11, 'text-anchor="middle" fill="#5a6066"'));
+    }
+  }
+  // pieces : nom, cotes, surface
+  for (const r of ROOMS.filter((q) => q.lvl === lvl)) {
+    const w = r.r[1] - r.r[0], h = r.r[3] - r.r[2], cx = (r.r[0] + r.r[1]) / 2, cy = (r.r[2] + r.r[3]) / 2;
+    const big = w > 1.4 && h > 1.0;
+    out.push(text(cx, cy + 0.12, r.name, big ? 0.2 : 0.14, 'text-anchor="middle" font-weight="700" fill="#1f2328"'));
+    if (lvl < 2) {
+      const loss = roomLoss(r);
+      out.push(text(cx, cy - 0.1, `${fmt2(w)} × ${fmt2(h)} m`, big ? 0.14 : 0.1, 'text-anchor="middle" fill="#4a5056"'));
+      out.push(text(cx, cy - 0.28, `${(w * h - loss).toFixed(1).replace('.', ',')} m²${loss > 0.005 ? ' (isolée)' : ''}`, big ? 0.14 : 0.1, 'text-anchor="middle" fill="#4a5056"'));
+    } else {
+      out.push(text(cx, cy - 0.1, `${atticCarrez().toFixed(1).replace('.', ',')} m² à 1,80 m et plus (zone en pointillés)`, 0.13, 'text-anchor="middle" fill="#4a5056"'));
+    }
+  }
+  // cotes exterieures, rue, echelle
+  const x0 = -T, x1 = W + T, y0 = -T, y1 = D + T, k = 0.012;
+  out.push(line([x0, y1 + 0.45], [x1, y1 + 0.45], `stroke="#33302c" stroke-width="${k}"`));
+  for (const x of [x0, x1]) out.push(line([x, y1 + 0.35], [x, y1 + 0.55], `stroke="#33302c" stroke-width="${k}"`));
+  out.push(text((x0 + x1) / 2, y1 + 0.52, `${fmt2(x1 - x0)} m`, 0.16, 'text-anchor="middle" fill="#1f2328"'));
+  out.push(line([x0 - 0.45, y0], [x0 - 0.45, y1], `stroke="#33302c" stroke-width="${k}"`));
+  for (const y of [y0, y1]) out.push(line([x0 - 0.55, y], [x0 - 0.35, y], `stroke="#33302c" stroke-width="${k}"`));
+  out.push(`<text x="${X(x0 - 0.52).toFixed(3)}" y="${Y((y0 + y1) / 2).toFixed(3)}" font-size="0.16" text-anchor="middle" fill="#1f2328" transform="rotate(-90 ${X(x0 - 0.52).toFixed(3)} ${Y((y0 + y1) / 2).toFixed(3)})">${fmt2(y1 - y0)} m</text>`);
+  out.push(text((x0 + x1) / 2, y1 + 0.95, '↑ Rue', 0.2, 'text-anchor="middle" fill="#6b7177"'));
+  out.push(text((x0 + x1) / 2, y0 - 0.55, 'Jardin ↓', 0.2, 'text-anchor="middle" fill="#6b7177"'));
+  out.push(line([x1 - 2, y0 - 0.55], [x1, y0 - 0.55], 'stroke="#33302c" stroke-width="0.04"'));
+  for (let m = 0; m <= 2; m++) out.push(line([x1 - 2 + m, y0 - 0.48], [x1 - 2 + m, y0 - 0.62], `stroke="#33302c" stroke-width="${k}"`));
+  out.push(text(x1 - 1, y0 - 0.85, '2 m', 0.14, 'text-anchor="middle" fill="#33302c"'));
+  const vb = [x0 - 1.0, Y(y1 + 1.25), x1 - x0 + 1.4, y1 - y0 + 2.5];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map((v) => v.toFixed(3)).join(' ')}" font-family="Inter, system-ui, sans-serif" role="img" aria-label="Plan ${esc(PLAN_LV[lvl][1])}">${out.join('')}</svg>`;
+}
+function renderPlan() {
+  const tabs = document.getElementById('plan-tabs');
+  tabs.innerHTML = '';
+  PLAN_LV.forEach(([, lab], i) => {
+    const b = document.createElement('button'); b.textContent = lab; b.setAttribute('aria-pressed', String(i === planLvl));
+    b.addEventListener('click', () => { planLvl = i; renderPlan(); });
+    tabs.append(b);
+  });
+  const cur = curName();
+  document.getElementById('plan-sub').textContent = `${PLAN_LV[planLvl][1]} · ${cur ? `projet « ${cur} »` : 'projet en cours'} · coupe à 1 m du sol · ${new Date().toLocaleDateString('fr-FR')}`;
+  document.getElementById('plan-body').innerHTML = planSVG(planLvl);
+}
+document.getElementById('pj-plan').addEventListener('click', () => { planLvl = mode === 'visite' ? (walker.pos.y > LVZ[2] - 0.3 ? 2 : walker.pos.y > LVZ[1] - 0.6 ? 1 : 0) : (String(cut) === '2' ? 2 : String(cut) === '1' ? 1 : 0); renderPlan(); document.getElementById('plan').hidden = false; });
+document.getElementById('plan-close').addEventListener('click', () => { document.getElementById('plan').hidden = true; });
+document.getElementById('plan-print').addEventListener('click', () => window.print());
+document.getElementById('plan-meubles').addEventListener('change', renderPlan);
+
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
@@ -4364,7 +4918,8 @@ function setHelp() {
   if (furnMode) { h.innerHTML = 'Cliquez un meuble, un équipement ou l’escalier : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Ajouter un élément</b> ouvre le catalogue ; les éléments muraux se collent au mur quand on les en approche. <b>Vue du dessus</b> aide à les placer.'; return; }
   if (wallMode && wmMode === 'tout') { h.innerHTML = 'Cliquez une cloison : glissez-la pour la déplacer (vue Maquette), tirez ses poignées orange pour l’allonger, ou réglez ses cotes. <b>Portion</b> ou <b>Trou</b> pour ne casser qu’une partie, <b>Construire</b> pour en ajouter, <b>Isoler</b> pour doubler les murs.'; return; }
   if (wallMode && wmMode === 'construire') { h.innerHTML = 'Cliquez-glissez au sol pour tracer une cloison. Ensuite : portes avec <b>Ouvertures</b>, peinture avec <b>Revêtements</b>. Pour la retoucher ou la supprimer : <b>Modifier</b>, puis cliquez-la.'; return; }
-  if (wallMode && wmMode === 'isoler') { h.innerHTML = 'Cliquez la face d’un mur côté pièce pour un doublage intérieur, ou côté dehors pour une isolation par l’extérieur, puis choisissez l’épaisseur. La surface perdue est calculée pièce par pièce.'; return; }
+  if (wallMode && wmMode === 'baie') { h.innerHTML = 'Cliquez-glissez le long d’un mur pour tracer la baie vitrée (ou cliquez pour 2,40 m). Glissez-la ensuite pour la déplacer, réglez largeur, hauteur, nombre de vantaux et couleur du cadre.'; return; }
+  if (wallMode && wmMode === 'isoler') { h.innerHTML = 'Cliquez la face d’un mur côté pièce pour un doublage intérieur, ou côté dehors pour une isolation par l’extérieur, puis choisissez l’épaisseur. Dans les combles, cliquez le dessous du toit pour isoler les rampants. La surface perdue est calculée.'; return; }
   if (wallMode) { h.innerHTML = 'Cliquez-glissez sur un mur (cloison ou mur extérieur) pour tracer la partie à casser. Une partie déjà cassée se déplace en la faisant glisser. Les portes et fenêtres touchées sont englobées.'; return; }
   if (measuring) { h.innerHTML = 'Cliquez deux points sur un mur, un sol ou un meuble pour lire la distance.'; return; }
   if (mode === 'maquette') h.innerHTML = 'Glissez pour tourner, molette ou pincement pour zoomer, clic droit pour décaler. <b>Afficher</b> coupe la maison à un étage.';
@@ -4436,7 +4991,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { PW, castFirst, getCollider: () => collider, recap: () => travauxLines(), orbit, cat: { CATALOG, add: (c) => addFromCatalog(c), state: () => ajoutsState() }, iso: { roomLoss, houseLoss, isoState, pick: (x, y) => pickIso(x, y), sel: () => isoSel }, ROOMS, geo: { editGeom, attachments, sidesOf, geoState, handles }, NEUF, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
+window.__maison = { PW, planSVG, style: { apply: applyStyle, get: styleState, info: shutterInfo, of: shutterOf, STYLE }, ramp: { RAMP, setRamp, atticCarrez, roofZ }, castFirst, getCollider: () => collider, recap: () => travauxLines(), orbit, cat: { CATALOG, add: (c) => addFromCatalog(c), state: () => ajoutsState() }, iso: { roomLoss, houseLoss, isoState, pick: (x, y) => pickIso(x, y), sel: () => isoSel }, ROOMS, geo: { editGeom, attachments, sidesOf, geoState, handles }, NEUF, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
