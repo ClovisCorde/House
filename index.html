@@ -184,6 +184,38 @@ select#goto {
 .cat-grid button { display: grid; gap: 2px; text-align: left; padding: 8px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-solid); color: var(--fg); cursor: pointer; font: 500 12.5px/1.2 var(--font-body); }
 .cat-grid button:hover { border-color: var(--accent); }
 .cat-grid small { color: var(--muted); font-size: 11px; }
+.opstyle { border-top: 1px solid var(--line); padding-top: 8px; font-size: 13px; }
+.opstyle summary { cursor: pointer; color: var(--fg); font-weight: 600; padding: 4px 0 8px; }
+.opstyle select { font: 500 13px var(--font-body); color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; min-width: 0; }
+#ouvpanel { max-height: calc(100% - 150px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; }
+#recap { inset: 0; z-index: 30; background: var(--panel-solid); overflow-y: auto; overscroll-behavior: contain;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px)); }
+#recap header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; max-width: 900px; margin: 0 auto 8px; }
+#recap h2 { margin: 0; font-family: var(--font-display); font-size: 22px; }
+#recap header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.recap-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.recap-note { max-width: 900px; margin: 0 auto 16px; color: var(--muted); font-size: 12.5px; }
+#recap-body { max-width: 900px; margin: 0 auto; }
+#recap h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 18px 0 6px; font-weight: 600; }
+#recap table { table-layout: fixed; }
+#recap thead th:nth-child(1) { width: 46%; } #recap thead th:nth-child(2) { width: 16%; } #recap thead th:nth-child(3) { width: 24%; } #recap thead th:nth-child(4) { width: 14%; }
+#recap table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+#recap td, #recap th { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+#recap th { font-weight: 600; color: var(--muted); font-size: 12px; }
+#recap td.q, #recap th.q, #recap td.t, #recap th.t { text-align: right; white-space: nowrap; }
+#recap td.p { width: 120px; white-space: nowrap; }
+#recap td.p input { width: 76px; font: 500 13px var(--font-body); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; text-align: right; }
+#recap .detail { color: var(--muted); font-size: 12px; }
+#recap .warn { color: var(--measure); font-size: 12px; }
+#recap .total td { font-weight: 700; border-bottom: 0; font-size: 15px; }
+#recap .empty { color: var(--muted); padding: 20px 0; }
+@media (max-width: 640px) { #recap td.p { font-size: 11px; } #recap td.p input { width: 50px; } #recap td, #recap th { padding: 6px 3px; } }
+@media print {
+  body > *:not(#recap) { display: none !important; }
+  #recap { position: static; overflow: visible; background: #fff; color: #000; }
+  .recap-btns, #recap td.p input { border: 0; }
+  .recap-btns { display: none; }
+}
 #op-count, #fp-count, #wp-count { font-size: 12.5px; color: var(--muted); margin-right: auto; }
 @media (max-width: 640px) {
   #ouvpanel, #furnpanel, #wallpanel, #projpanel, #finpanel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); left: 10px; right: 10px; width: auto;
@@ -354,6 +386,9 @@ select#goto {
     <span class="lbl2">Mes projets</span>
     <ul id="pj-list"></ul>
     <button id="pj-new" class="tool">Repartir du plan d’origine</button>
+  </div>
+  <div class="pj-block">
+    <button id="pj-recap" class="tool accent">Récapitulatif des travaux</button>
   </div>
   <div class="pj-block">
     <span class="lbl2">Partager</span>
@@ -527,6 +562,14 @@ select#goto {
     <button id="op-add" class="tool" hidden>Ajouter ici</button>
   </div>
   <p id="op-msg" class="opmsg" hidden></p>
+  <details class="opstyle" id="op-style">
+    <summary>Couleurs des menuiseries (toute la maison)</summary>
+    <div class="opgrid">
+      <label for="st-fen">Fenêtres</label><select id="st-fen"></select>
+      <label for="st-volet">Volets</label><select id="st-volet"></select>
+      <label for="st-porte">Porte d’entrée</label><select id="st-porte"></select>
+    </div>
+  </details>
   <div class="row sep">
     <span id="op-count">Ouvertures d’origine</span>
     <button id="op-undo" class="tool" disabled>Annuler</button>
@@ -548,6 +591,14 @@ select#goto {
     <button class="closebtn" id="gal-close">Fermer</button>
   </header>
   <div id="gal-body"></div>
+</div>
+<div id="recap" class="ui" role="dialog" aria-modal="true" aria-labelledby="recap-title" hidden>
+  <header>
+    <div><h2 id="recap-title">Récapitulatif des travaux</h2><p id="recap-sub"></p></div>
+    <div class="recap-btns"><button class="closebtn" id="recap-print">Imprimer</button><button class="closebtn" id="recap-close">Fermer</button></div>
+  </header>
+  <p class="recap-note">Quantités mesurées sur la maquette, à vérifier sur place. Les prix unitaires sont les vôtres : saisissez-les (devis, tarifs relevés) pour obtenir un total. Ils restent sur cet appareil.</p>
+  <div id="recap-body"></div>
 </div>
 <div id="lb" class="ui" role="dialog" aria-modal="true" aria-label="Rendu en grand" hidden>
   <img id="lb-img" alt="">
@@ -768,6 +819,7 @@ async function onModelAsync(gltf) {
   initFinishes(gltf.scene);
   applyIso(lsGet(ISTORE, {}));
   applyAjouts(lsGet(CSTORE, []));
+  applyStyle(lsGet(STSTORE, {}));
   applyCut('all');
   initProjects().catch((e) => console.warn('Projets', e));
   setHelp();
@@ -928,7 +980,7 @@ sel.addEventListener('change', () => {
 
 // clavier (codes physiques : marche aussi en AZERTY avec ZQSD)
 addEventListener('keydown', (e) => {
-  if (e.target === sel || !gal.hidden || !lb.hidden) return;
+  if (e.target === sel || !gal.hidden || !lb.hidden || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || !document.getElementById('recap').hidden) return;
   keys.add(e.code);
   if (mode === 'visite' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
@@ -1295,7 +1347,7 @@ const FURN_LABELS = {
   armoire_miroir: 'Armoire de toilette', wc: 'WC', table_ronde: 'Table ronde', chaise_paille: 'Chaise paillée',
   meuble_bas: 'Meuble bas', lit_ch4: 'Lit', armoire_ch4: 'Armoire', chevet_ch4: 'Table de chevet', lit_ch1: 'Lit',
   chevet_ch1: 'Table de chevet', armoire_ch1: 'Armoire vitrée', cheminee: 'Cheminée', credence: 'Crédence',
-  placard: 'Placard à portes miroir',
+  placard: 'Placard à portes miroir', escalier: 'Escalier', escalier_combles: 'Escalier des combles',
 };
 const ROOM_LABELS = {
   sejour: 'séjour', entree: 'entrée', salle_a_manger: 'salle à manger', local_1: 'local 1', salle_d_eau: 'salle d’eau',
@@ -1370,7 +1422,7 @@ function renderFurnPanel() {
   } else if (f.ajout) {
     fp.lvl.textContent = `Élément ajouté · ${LEVEL_LABEL[f.level] || 'Combles'}`;
     fp.name.textContent = f.name;
-    fp.meta.textContent = `${cm(f.it.w)} × ${cm(f.it.d)} × ${cm(f.it.h)} cm. Glissez-le pour le déplacer.`;
+    fp.meta.textContent = `${cm(f.it.w)} × ${cm(f.it.d)} × ${cm(f.it.h)} cm. Glissez-le pour le déplacer${CAT_OF[f.it.c].mur ? ' : approché d’un mur, il s’y colle' : ''}.`;
     show(fp.r90, true); show(fp.r15, true); show(fp.del, true);
   } else if (f.type === 'meuble') {
     fp.lvl.textContent = `Meuble ou équipement · ${LEVEL_LABEL[f.level]}`;
@@ -1453,6 +1505,7 @@ canvas.addEventListener('pointermove', (e) => {
   // reste a l'interieur de la maison
   selFurn.x = Math.min(W - 0.15, Math.max(0.15, dragHit.x + furnDrag.ox));
   selFurn.z = Math.min(-0.15, Math.max(-(D - 0.15), dragHit.z + furnDrag.oz));
+  if (selFurn.ajout) { selFurn.rot = furnDrag.rot0 ?? selFurn.rot; furnDrag.rot0 = furnDrag.rot0 ?? selFurn.rot; snapAjout(selFurn); }
   furnDrag.moved = true;
   applyFurn(selFurn);
 });
@@ -1525,8 +1578,14 @@ const FINS = {
   blanc: ['Blanc', '#f1efe9'], creme: ['Crème', '#e6dcc6'], gris: ['Gris clair', '#a9adb1'], anthracite: ['Anthracite', '#3b3e42'],
   noir: ['Noir', '#1f2123'], sauge: ['Vert sauge', '#8fa184'], bleu: ['Bleu', '#56708a'], terracotta: ['Terracotta', '#b56f50'],
   moutarde: ['Moutarde', '#c49b3c'], beige: ['Beige', '#cdbb9d'], chene: ['Chêne', 'tex:Bois_pin'], noyer: ['Noyer', 'tex:Noyer'],
-  inox: ['Inox', 'metal:#c3c7cb'],
+  inox: ['Inox', 'metal:#c3c7cb'], laiton: ['Laiton', 'metal:#b89a5a'],
+  parquet: ['Parquet', 'tex:Parquet_sapin'], tomettes: ['Tomettes', 'tex:Tomettes'], carreau_clair: ['Carrelage clair', 'tex:Carreau_clair'],
+  carreau_beige: ['Carrelage beige', 'tex:Carreau_beige'], vinyle: ['Dalles vinyle', 'tex:Dalles_vinyle'], plancher: ['Plancher brut', 'tex:Plancher_brut'],
+  beton: ['Béton ciré', 'tex:Beton_clair'], ardoise: ['Ardoise', 'tex:Ardoise'], faience: ['Faïence', 'tex:Faience_carreaux'],
 };
+const F_SOL = ['parquet', 'tomettes', 'carreau_clair', 'carreau_beige', 'vinyle', 'plancher', 'beton', 'ardoise'];
+const F_LUM = ['noir', 'blanc', 'laiton', 'chene'];
+let lightCount = 0;
 const F_MEUBLE = ['blanc', 'chene', 'noyer', 'gris', 'anthracite', 'noir', 'sauge', 'bleu'];
 const F_CUIS = ['blanc', 'creme', 'chene', 'gris', 'anthracite', 'noir', 'sauge', 'bleu', 'terracotta'];
 const F_TISSU = ['gris', 'beige', 'anthracite', 'bleu', 'sauge', 'terracotta', 'moutarde', 'creme'];
@@ -1560,6 +1619,21 @@ function kit(p) {
     sph(m, r, x, y, z, sx = 1, sy = 1, sz = 1) {
       const me = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), m); me.position.set(x, y, z); me.scale.set(sx, sy, sz); g.add(me); return me;
     },
+    // materiau texture a l'echelle reelle sur une face de w x d metres
+    scaled(key, w, d) {
+      const v = (FINS[key] || FINS.parquet)[1], name = v.startsWith('tex:') ? v.slice(4) : null, src = name && MATS[name];
+      if (!src) return finMat(key);
+      const m = src.clone(), [tx, ty] = TILES[name] || [1, 1];
+      if (src.map) { m.map = src.map.clone(); m.map.repeat.set(w / tx, d / ty); m.map.needsUpdate = true; }
+      return m;
+    },
+    // lumiere (8 au plus dans la maison, pour garder la fluidite)
+    light(x, y, z, intensity = 3, dist = 7) {
+      if (lightCount >= 8) return null;
+      const l = new THREE.PointLight(0xffd9a8, intensity, dist, 2); l.position.set(x, y, z); g.add(l); lightCount++;
+      g.userData.lights = (g.userData.lights || 0) + 1; return l;
+    },
+    bulb: M('#fff3d6', 0.4, 0, { emissive: new THREE.Color('#ffdca0'), emissiveIntensity: 1.2 }),
     // facade : portes ou tiroirs (rainures + poignees) sur la face avant z = zf
     fronts(w, x0, y0, h, zf, cols, rows = 1, handle = 'barre') {
       const gr = K.dark;
@@ -1831,12 +1905,99 @@ const CATALOG = [
     K.cyl(K.F, 0.012, p.h - 0.3, 0, 0.03, 0);
     K.cyl(K.fabricLight, p.w / 2, 0.3, 0, p.h - 0.3, 0, p.w * 0.36);
   } },
+  { id: 'escalier', cat: 'Divers', label: 'Escalier droit', w: [0.9, 0.7, 1.2], d: [3.3, 2.4, 4.2], h: [2.95, 2.5, 3.1], fins: F_MEUBLE, fin: 'chene', b(p, K) {
+    const n = Math.max(10, Math.round(p.h / 0.185)), rh = p.h / n, run = p.d / n;
+    for (let k = 0; k < n; k++) {
+      K.box(K.F, p.w - 0.08, 0.04, run + 0.03, 0, (k + 1) * rh - 0.04, p.d / 2 - (k + 0.5) * run);
+      K.box(K.F, p.w - 0.08, rh - 0.04, 0.015, 0, k * rh, p.d / 2 - k * run - 0.008);
+    }
+    for (const sx of [-1, 1]) {
+      const st = K.box(K.F, 0.04, 0.28, Math.hypot(p.d, p.h) + 0.1, sx * (p.w / 2 - 0.02), 0, 0);
+      st.rotation.x = Math.atan2(p.h, p.d); st.position.set(sx * (p.w / 2 - 0.02), p.h / 2, 0);
+    }
+    const rail = K.box(K.dark, 0.04, 0.04, Math.hypot(p.d, p.h), p.w / 2 - 0.02, 0, 0);
+    rail.rotation.x = Math.atan2(p.h, p.d); rail.position.set(p.w / 2 - 0.02, p.h / 2 + 0.9, 0);
+  } },
   { id: 'placard', cat: 'Divers', label: 'Placard toute hauteur', w: [1.2, 0.6, 3.0], d: [0.6, 0.45, 0.65], h: [2.5, 2.0, 2.7], fins: F_MEUBLE, fin: 'blanc', b(p, K) {
     K.box(K.F, p.w, p.h, p.d, 0, 0, 0);
     K.fronts(p.w, 0, 0, p.h, p.d / 2, Math.max(2, Math.round(p.w / 0.6)), 1, 'barre');
   } },
 ];
+CATALOG.push(
+  // ---- sols : un revetement pose sur une zone (utile apres avoir abattu ou deplace une cloison)
+  { id: 'zone_sol', cat: 'Sols et plafonds', label: 'Zone de revêtement de sol', w: [3.0, 0.5, 9.0], d: [3.0, 0.5, 7.0], h: [0.012, 0.012, 0.012], fins: F_SOL, fin: 'parquet', b(p, K) {
+    K.box(K.scaled(p.fin, p.w, p.d), p.w, 0.012, p.d, 0, 0, 0);
+  } },
+  { id: 'zone_plafond', cat: 'Sols et plafonds', label: 'Faux plafond', w: [3.0, 0.5, 9.0], d: [3.0, 0.5, 7.0], h: [0.05, 0.03, 0.3], z0: 2.4, fins: ['blanc', 'creme', 'chene', 'gris', 'anthracite'], fin: 'blanc', b(p, K) {
+    K.box(K.F, p.w, p.h, p.d, 0, p.z0, 0);
+  } },
+  { id: 'poutre', cat: 'Sols et plafonds', label: 'Poutre apparente', w: [3.5, 0.5, 9.0], d: [0.16, 0.08, 0.35], h: [0.2, 0.08, 0.4], z0: 2.35, fins: ['chene', 'noyer', 'blanc', 'noir', 'gris'], fin: 'chene', b(p, K) {
+    K.box(K.F, p.w, p.h, p.d, 0, p.z0, 0);
+  } },
+  { id: 'plinthes', cat: 'Sols et plafonds', label: 'Plinthe', w: [2.0, 0.3, 9.0], d: [0.015, 0.012, 0.02], h: [0.08, 0.05, 0.15], fins: ['blanc', 'chene', 'noyer', 'noir', 'gris'], fin: 'blanc', b(p, K) {
+    K.box(K.F, p.w, p.h, p.d, 0, 0, 0);
+  } },
+  { id: 'credence', cat: 'Sols et plafonds', label: 'Crédence / faïence murale', w: [1.8, 0.3, 5.0], d: [0.01, 0.01, 0.01], h: [0.6, 0.2, 2.4], z0: 0.9, fins: ['faience', 'carreau_clair', 'carreau_beige', 'beton', 'ardoise', 'blanc', 'noir'], fin: 'faience', b(p, K) {
+    K.box(K.scaled(p.fin, p.w, p.h), p.w, p.h, p.d, 0, p.z0, 0);
+  } },
+  // ---- lumiere et electricite
+  { id: 'suspension', cat: 'Lumière', label: 'Suspension', w: [0.4, 0.2, 0.8], d: [0.4, 0.2, 0.8], h: [0.3, 0.15, 0.6], z0: 1.9, fins: F_LUM, fin: 'noir', b(p, K) {
+    K.cyl(K.F, p.w / 2, p.h, 0, p.z0, 0, 0.04, 24);
+    K.cyl(K.dark, 0.004, 2.74 - p.z0 - p.h, 0, p.z0 + p.h, 0);
+    K.sph(K.bulb, 0.05, 0, p.z0 + 0.02, 0);
+    K.light(0, p.z0 - 0.05, 0, 4, 8);
+  } },
+  { id: 'applique', cat: 'Lumière', label: 'Applique murale', w: [0.2, 0.12, 0.4], d: [0.15, 0.1, 0.25], h: [0.25, 0.12, 0.4], z0: 1.7, fins: F_LUM, fin: 'laiton', b(p, K) {
+    K.box(K.F, 0.08, 0.12, 0.02, 0, p.z0, -p.d / 2 + 0.01);
+    K.cyl(K.fabricLight, p.w / 2, p.h, 0, p.z0 - 0.04, 0.0, p.w * 0.35);
+    K.light(0, p.z0, 0.12, 2, 5);
+  } },
+  { id: 'spot', cat: 'Lumière', label: 'Spot encastré', w: [0.09, 0.07, 0.12], d: [0.09, 0.07, 0.12], h: [0.01, 0.01, 0.01], z0: 2.53, fins: ['blanc', 'noir', 'laiton'], fin: 'blanc', b(p, K) {
+    K.cyl(K.F, p.w / 2, 0.01, 0, p.z0, 0);
+    K.cyl(K.bulb, p.w / 2 - 0.015, 0.004, 0, p.z0 - 0.002, 0);
+    K.light(0, p.z0 - 0.1, 0, 1.5, 4);
+  } },
+  { id: 'prise', cat: 'Lumière', label: 'Prise électrique', w: [0.08, 0.08, 0.3], d: [0.012, 0.012, 0.012], h: [0.08, 0.08, 0.08], z0: 0.3, fins: ['blanc', 'noir', 'laiton'], fin: 'blanc', b(p, K) {
+    const n = Math.max(1, Math.round(p.w / 0.075));
+    for (let k = 0; k < n; k++) {
+      const x = -p.w / 2 + 0.04 + (k * (p.w - 0.08)) / Math.max(1, n - 1);
+      K.box(K.F, 0.075, p.h, p.d, n === 1 ? 0 : x, p.z0, 0);
+      for (const dx of [-0.01, 0.01]) K.cyl(K.dark, 0.003, 0.004, (n === 1 ? 0 : x) + dx, p.z0 + p.h / 2, p.d / 2, 0.003, 8).rotation.x = Math.PI / 2;
+    }
+  } },
+  { id: 'interrupteur', cat: 'Lumière', label: 'Interrupteur', w: [0.08, 0.08, 0.16], d: [0.012, 0.012, 0.012], h: [0.08, 0.08, 0.08], z0: 1.1, fins: ['blanc', 'noir', 'laiton'], fin: 'blanc', b(p, K) {
+    K.box(K.F, p.w, p.h, p.d, 0, p.z0, 0);
+    K.box(K.M('#e4e2dc', 0.4), p.w - 0.025, p.h - 0.025, 0.006, 0, p.z0 + 0.0125, p.d / 2);
+  } },
+);
+// elements qui se posent dos au mur : en les approchant d'un mur ils s'y collent et se tournent vers la piece
+for (const id of ['cuis_bas', 'cuis_evier', 'cuis_plaque', 'lave_vaisselle', 'cuis_haut', 'colonne', 'frigo_us', 'hotte', 'douche', 'baignoire', 'vasque', 'wc',
+  'seche_serv', 'lave_linge', 'ballon', 'lit', 'chevet', 'armoire', 'commode', 'bureau', 'meuble_tv', 'biblio', 'buffet', 'radiateur', 'placard', 'plinthes',
+  'credence', 'applique', 'prise', 'interrupteur', 'canape']) { const c = CATALOG.find((q) => q.id === id); if (c) c.mur = true; }
 const CAT_OF = Object.fromEntries(CATALOG.map((c) => [c.id, c]));
+function snapAjout(f) {
+  const c = CAT_OF[f.it.c], cx = f.x, cy = -f.z;
+  let best = null;
+  for (const w of Object.values(PW)) {
+    const d = w.def;
+    if (d.kind === 'roof' || d.level !== f.level || (walls[d.id] && walls[d.id].removed)) continue;
+    const F = frameOf(d), u = uOf(d, cx, cy);
+    if (u < d.a0 - 0.05 || u > d.a1 + 0.05) continue;
+    for (const side of ['A', 'B']) {
+      const sg = side === 'A' ? -1 : 1, tf = (side === 'A' ? d.tA : d.tB) + sg * liningAt(w, side, u);
+      const gap = (tOf(d, cx, cy) - tf) * sg - f.it.d / 2;
+      if (gap < -0.08 || gap > (c.mur ? 0.3 : 0.12)) continue;
+      const nx = sg * F.nx, ny = sg * F.ny, align = Math.sin(f.rot) * nx - Math.cos(f.rot) * ny;
+      if (!c.mur && align < 0.97) continue;
+      if (!best || gap < best.gap) best = { d, tf, nx, ny, sg, gap, u };
+    }
+  }
+  if (!best) return false;
+  if (c.mur) f.rot = Math.atan2(best.nx, -best.ny);
+  const P = toPlan(best.d, best.u, best.tf + best.sg * (f.it.d / 2 + 0.003), 0);
+  f.x = P[0]; f.z = -P[1];
+  return true;
+}
 const CATS = [...new Set(CATALOG.map((c) => c.cat))];
 let ajoutSeq = 1;
 function buildItemNode(it) {
@@ -1844,14 +2005,27 @@ function buildItemNode(it) {
   const p = { w: it.w, d: it.d, h: it.h, z0: it.z0 ?? c.z0 ?? 0, fin: it.fin };
   const K = kit(p);
   c.b(p, K);
-  K.g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
-  return K.g;
+  // une seule maille par matiere : beaucoup moins d'appels de dessin (une bibliotheque compte des centaines de livres)
+  K.g.updateMatrixWorld(true);
+  const byMat = new Map(), out = new THREE.Group();
+  K.g.traverse((o) => {
+    if (o.isMesh) {
+      const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      geo.applyMatrix4(o.matrixWorld);
+      if (!byMat.has(o.material)) byMat.set(o.material, []);
+      byMat.get(o.material).push(geo);
+    }
+  });
+  for (const [m, list] of byMat) out.add(new THREE.Mesh(list.length > 1 ? mergeGeometries(list, false) : list[0], m));
+  for (const o of [...K.g.children]) if (o.isLight) out.add(o);
+  out.userData.lights = K.g.userData.lights || 0;
+  return out;
 }
 // cree (ou recree) un element ajoute dans le registre des meubles
 function placeAjout(it) {
   const key = `Ajout_${it.uid}`;
   const old = furn[key];
-  if (old) { old.pivot.parent?.remove(old.pivot); old.col.geometry.dispose(); }
+  if (old) { old.pivot.parent?.remove(old.pivot); old.col.geometry.dispose(); lightCount -= old.node.userData.lights || 0; }
   const node = buildItemNode(it);
   node.name = key;
   const pivot = new THREE.Group();
@@ -1889,7 +2063,7 @@ function ajoutsState() {
 }
 function saveAjouts() { lsSet(CSTORE, ajoutsState()); }
 function removeAllAjouts() {
-  for (const f of Object.values(furn)) if (f.ajout) { f.pivot.parent?.remove(f.pivot); f.col.geometry.dispose(); delete furn[f.key]; delete groups[f.key]; }
+  for (const f of Object.values(furn)) if (f.ajout) { f.pivot.parent?.remove(f.pivot); f.col.geometry.dispose(); lightCount -= f.node.userData.lights || 0; delete furn[f.key]; delete groups[f.key]; }
   if (selFurn && selFurn.ajout) selFurn = null;
 }
 function applyAjouts(list) {
@@ -2261,6 +2435,7 @@ function buildVerriere(B, d, u0, u1, z0, z1) {
 }
 
 function buildJoinery(B, d, o, iso) {
+  const MEN = STYLE.fen || 'Menuiserie', PORTE = STYLE.porte || 'Porte_entree', VOL = STYLE.volet === 'aucun' ? null : STYLE.volet || 'Volet_rouge';
   const s = o.u - o.w / 2, e = o.u + o.w / 2, zb = o.zb, zt = o.zt;
   if (o.type === 'baie' || ROUGH(o.type)) return;
   if (o.type === 'verriere') { buildVerriere(B, d, s, e, zb, zt); return; }
@@ -2284,47 +2459,47 @@ function buildJoinery(B, d, o, iso) {
   const north = d.side === 'N';
   if (o.type === 'porte') {                     // porte d'entree vitree, ouverte vers l'interieur, imposte si haute
     const zl = Math.min(zt, zb + 2.05);
-    B.wbox(d, 'Porte_entree', s, s + 0.06, tm - 0.035, tm + 0.035, zb, zt);
-    B.wbox(d, 'Porte_entree', e - 0.06, e, tm - 0.035, tm + 0.035, zb, zt);
-    B.wbox(d, 'Porte_entree', s + 0.06, s + 0.10, tm, tm - sg * (o.w - 0.12), zb, zl);   // vantail ouvert vers l'interieur
+    B.wbox(d, PORTE, s, s + 0.06, tm - 0.035, tm + 0.035, zb, zt);
+    B.wbox(d, PORTE, e - 0.06, e, tm - 0.035, tm + 0.035, zb, zt);
+    B.wbox(d, PORTE, s + 0.06, s + 0.10, tm, tm - sg * (o.w - 0.12), zb, zl);   // vantail ouvert vers l'interieur
     if (zt - zl > 0.12) {
-      B.wbox(d, 'Porte_entree', s, e, tm - 0.035, tm + 0.035, zl, zl + 0.07);
+      B.wbox(d, PORTE, s, e, tm - 0.035, tm + 0.035, zl, zl + 0.07);
       B.wbox(d, 'Verre', s + 0.06, e - 0.06, tm - 0.004, tm + 0.004, zl + 0.07, zt);
     }
   } else if (o.type === 'porte_fenetre') {      // dormant + vantaux vitres ouverts vers l'interieur (on peut passer)
-    B.wbox(d, 'Menuiserie', s, s + fr, tm - dp, tm + dp, zb, zt);
-    B.wbox(d, 'Menuiserie', e - fr, e, tm - dp, tm + dp, zb, zt);
-    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zt - fr, zt);
-    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zb, zb + 0.02);
+    B.wbox(d, MEN, s, s + fr, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, MEN, e - fr, e, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, MEN, s, e, tm - dp, tm + dp, zt - fr, zt);
+    B.wbox(d, MEN, s, e, tm - dp, tm + dp, zb, zb + 0.02);
     const two = o.w > 0.75, L = (two ? (o.w - 2 * fr) / 2 : o.w - 2 * fr) - 0.01;
     const leaf = (u0, u1) => {           // vantail perpendiculaire au mur, de tm vers l'interieur
       const t0 = tm, t1 = tm - sg * L, z0 = zb + 0.02, z1 = zt - fr - 0.01;
-      B.wbox(d, 'Menuiserie', u0, u1, t0, t0 - sg * 0.06, z0, z1);
-      B.wbox(d, 'Menuiserie', u0, u1, t1 + sg * 0.06, t1, z0, z1);
-      B.wbox(d, 'Menuiserie', u0, u1, t0, t1, z0, z0 + 0.12);
-      B.wbox(d, 'Menuiserie', u0, u1, t0, t1, z1 - 0.06, z1);
-      for (let k = 1; k < 4; k++) { const zz = z0 + 0.12 + (k * (z1 - 0.06 - z0 - 0.12)) / 4; B.wbox(d, 'Menuiserie', u0 + 0.008, u1 - 0.008, t0, t1, zz - 0.012, zz + 0.012); }
+      B.wbox(d, MEN, u0, u1, t0, t0 - sg * 0.06, z0, z1);
+      B.wbox(d, MEN, u0, u1, t1 + sg * 0.06, t1, z0, z1);
+      B.wbox(d, MEN, u0, u1, t0, t1, z0, z0 + 0.12);
+      B.wbox(d, MEN, u0, u1, t0, t1, z1 - 0.06, z1);
+      for (let k = 1; k < 4; k++) { const zz = z0 + 0.12 + (k * (z1 - 0.06 - z0 - 0.12)) / 4; B.wbox(d, MEN, u0 + 0.008, u1 - 0.008, t0, t1, zz - 0.012, zz + 0.012); }
       const um = (u0 + u1) / 2;
       B.wbox(d, 'Verre', um - 0.003, um + 0.003, t0 - sg * 0.06, t1 + sg * 0.06, z0 + 0.12, z1 - 0.06);
     };
     leaf(s + fr, s + fr + 0.045);
     if (two) leaf(e - fr - 0.045, e - fr);
-    B.wbox(d, 'Volet_rouge', s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); B.wbox(d, 'Volet_rouge', e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt);
+    if (VOL) B.wbox(d, VOL, s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); if (VOL) B.wbox(d, VOL, e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt);
   } else {                                      // fenetre, petite fenetre
-    B.wbox(d, 'Menuiserie', s, s + fr, tm - dp, tm + dp, zb, zt);
-    B.wbox(d, 'Menuiserie', e - fr, e, tm - dp, tm + dp, zb, zt);
-    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zb, zb + fr);
-    B.wbox(d, 'Menuiserie', s, e, tm - dp, tm + dp, zt - fr, zt);
-    if (o.type !== 'petite' && o.w > 0.55) B.wbox(d, 'Menuiserie', o.u - 0.035, o.u + 0.035, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, MEN, s, s + fr, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, MEN, e - fr, e, tm - dp, tm + dp, zb, zt);
+    B.wbox(d, MEN, s, e, tm - dp, tm + dp, zb, zb + fr);
+    B.wbox(d, MEN, s, e, tm - dp, tm + dp, zt - fr, zt);
+    if (o.type !== 'petite' && o.w > 0.55) B.wbox(d, MEN, o.u - 0.035, o.u + 0.035, tm - dp, tm + dp, zb, zt);
     const rows = o.type === 'petite' ? 2 : o.type === 'porte_fenetre' ? 4 : 3;
     for (let k = 1; k < rows; k++) {
       const zz = zb + fr + (k * (zt - zb - 2 * fr)) / rows;
-      B.wbox(d, 'Menuiserie', s, e, tm - 0.012, tm + 0.012, zz - 0.012, zz + 0.012);
+      B.wbox(d, MEN, s, e, tm - 0.012, tm + 0.012, zz - 0.012, zz + 0.012);
     }
     B.wbox(d, 'Verre', s + fr, e - fr, tm - 0.003, tm + 0.003, zb + fr, zt - fr);
-    if (o.type !== 'porte_fenetre') B.wbox(d, 'Menuiserie', s - 0.03, e + 0.03, tm, tIn - sg * 0.03, zb - 0.03, zb);
-    if (o.type === 'petite') B.wbox(d, 'Volet_rouge', s, e, tOut - sg * 0.05, tOut - sg * 0.09, zb, zt);
-    else { B.wbox(d, 'Volet_rouge', s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); B.wbox(d, 'Volet_rouge', e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt); }
+    if (o.type !== 'porte_fenetre') B.wbox(d, MEN, s - 0.03, e + 0.03, tm, tIn - sg * 0.03, zb - 0.03, zb);
+    if (o.type === 'petite') if (VOL) B.wbox(d, VOL, s, e, tOut - sg * 0.05, tOut - sg * 0.09, zb, zt);
+    else { if (VOL) B.wbox(d, VOL, s, s + 0.06, tOut, tOut - sg * 0.14, zb, zt); if (VOL) B.wbox(d, VOL, e - 0.06, e, tOut, tOut - sg * 0.14, zb, zt); }
   }
   // encadrement exterieur : pierre sombre harpee cote rue, appui beton ailleurs
   if (north) {
@@ -2829,6 +3004,7 @@ op.add.addEventListener('click', () => {
 });
 op.undo.addEventListener('click', () => {
   const g = ouvHist.pop(); if (!g) return;
+  if (g.style) { applyStyle(g.style); lsSet(STSTORE, styleState()); renderOuvPanel(); return; }
   const k = casseHist.findIndex((c) => c.entry === g); if (k >= 0) casseHist.splice(k, 1);
   restoreEntry(g); renderOuvPanel();
 });
@@ -3455,6 +3631,33 @@ function toggleOuvMode(on) {
 }
 btnOuv.addEventListener('click', () => toggleOuvMode(!ouvMode));
 
+
+// ---------------------------------------------------------------- style des menuiseries exterieures (toute la maison)
+const STSTORE = 'maison-style';
+const STYLE = { fen: null, volet: null, porte: null };
+const STYLE_OPTS = {
+  fen: [['', 'Blanc (d’origine)'], ['#3b3f44', 'Gris anthracite'], ['#1f2022', 'Noir'], ['Bois_pin', 'Bois clair'], ['Noyer', 'Bois foncé'], ['#6f8a74', 'Vert'], ['#6d8291', 'Bleu gris']],
+  volet: [['', 'Rouges (d’origine)'], ['#5e7d5a', 'Verts'], ['#4f6d8a', 'Bleus'], ['#8b9196', 'Gris'], ['#3b3f44', 'Anthracite'], ['#eeeeea', 'Blancs'], ['Bois_pin', 'Bois'], ['aucun', 'Sans volets']],
+  porte: [['', 'D’origine'], ['Noyer', 'Bois foncé'], ['#3b3f44', 'Anthracite'], ['#8c2f2a', 'Rouge'], ['#2f4f6f', 'Bleu'], ['#3f5f45', 'Vert'], ['#efeee9', 'Blanche']],
+};
+function styleState() { const o = {}; for (const k of Object.keys(STYLE)) if (STYLE[k]) o[k] = STYLE[k]; return o; }
+function applyStyle(st) {
+  const before = JSON.stringify(STYLE);
+  for (const k of Object.keys(STYLE)) STYLE[k] = (st && STYLE_OPTS[k].some(([v]) => v && v === st[k])) ? st[k] : null;
+  if (JSON.stringify(STYLE) !== before) for (const [id, w] of Object.entries(PW)) if (w.def.kind === 'ext') rebuildWall(id, false);
+  for (const k of Object.keys(STYLE)) { const el = document.getElementById(`st-${k}`); if (el) el.value = STYLE[k] || ''; }
+}
+for (const k of Object.keys(STYLE)) {
+  const el = document.getElementById(`st-${k}`);
+  el.innerHTML = STYLE_OPTS[k].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  el.addEventListener('change', () => {
+    const prev = styleState();
+    applyStyle({ ...prev, [k]: el.value || undefined });
+    ouvHist.push([]); ouvHist[ouvHist.length - 1].style = prev;           // annulable avec les ouvertures
+    lsSet(STSTORE, styleState()); renderOuvPanel();
+  });
+}
+
 // ---------------------------------------------------------------- outil de mesure
 let measuring = false;
 const mPts = [], mObjs = [], mTags = [];
@@ -3773,9 +3976,10 @@ function getState() {
   if (Object.keys(NEUF).length) st.neuf = Object.values(NEUF).map((sp) => Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, r3(v)])));
   const geo = geoState(); if (Object.keys(geo).length) st.geo = geo;
   const iso = isoState(); if (Object.keys(iso).length) st.iso = iso;
+  const sty = styleState(); if (Object.keys(sty).length) st.style = sty;
   return st;
 }
-const isEmptyState = (st) => !st.murs.length && !Object.keys(st.ouv).length && !Object.keys(st.meubles).length && !st.fin && !st.neuf && !st.geo && !st.iso && !(st.ajouts && st.ajouts.length);
+const isEmptyState = (st) => !st.murs.length && !Object.keys(st.ouv).length && !Object.keys(st.meubles).length && !st.fin && !st.neuf && !st.geo && !st.iso && !(st.ajouts && st.ajouts.length) && !st.style;
 const sameState = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function applyState(st, persist, keepHist = false) {
   st = st || {};
@@ -3808,9 +4012,10 @@ function applyState(st, persist, keepHist = false) {
   }
   applyFin(st.fin || { murs: {}, sols: {} });
   applyIso(st.iso || {});
+  applyStyle(st.style || {});
   if (!keepHist) { ouvHist.length = 0; casseHist.length = 0; furnHist.length = 0; finHist.length = 0; }
   finSel = null;
-  if (persist) { save(); saveOuv(); saveFurn(); saveFin(); saveIso(); }
+  if (persist) { save(); saveOuv(); saveFurn(); saveFin(); saveIso(); lsSet(STSTORE, styleState()); }
   applyCut(mode === 'maquette' ? cut : 'all');
   if (wallMode) renderPanel(); if (ouvMode) renderOuvPanel(); if (furnMode) renderFurnPanel(); if (finMode) renderFinPanel();
 }
@@ -3845,6 +4050,7 @@ function summary(st) {
   if (nN) parts.push(`${nN} cloison${nN > 1 ? 's' : ''} neuve${nN > 1 ? 's' : ''}`);
   const nG = Object.keys(st.geo || {}).length;
   if (nG) parts.push(`${nG} cloison${nG > 1 ? 's' : ''} retouchée${nG > 1 ? 's' : ''}`);
+  if (st.style) parts.push('menuiseries recolorées');
   const nA = (st.ajouts || []).length;
   if (nA) parts.push(`${nA} élément${nA > 1 ? 's' : ''} ajouté${nA > 1 ? 's' : ''}`);
   const nI = Object.keys(st.iso || {}).length;
@@ -3938,7 +4144,8 @@ async function unpack(code) {
   const ajouts = Array.isArray(st.ajouts) ? st.ajouts.filter((it) => it && CAT_OF[it.c] && [it.x, it.y, it.rot, it.w, it.d, it.h].every(Number.isFinite)
     && [0, 1, 2].includes(it.lvl) && FINS[it.fin] && (it.z0 === undefined || Number.isFinite(it.z0))).slice(0, 400)
     .map((it) => ({ uid: String(it.uid).slice(0, 12), c: it.c, lvl: it.lvl, x: it.x, y: it.y, rot: it.rot, w: it.w, d: it.d, h: it.h, fin: it.fin, ...(it.z0 !== undefined ? { z0: it.z0 } : {}) })) : [];
-  return { v: 1, ...(ajouts.length ? { ajouts } : {}), ...(neuf.length ? { neuf } : {}), ...(Object.keys(geo).length ? { geo } : {}), ...(Object.keys(iso).length ? { iso } : {}), murs: Array.isArray(st.murs) ? st.murs.filter((k) => walls[k] || neuf.some((sp) => sp.id === k)) : [], ouv: Object.fromEntries(Object.entries(st.ouv || {}).filter(([k]) => ok(k))),
+  const style = Object.fromEntries(Object.entries(st.style || {}).filter(([k, v]) => STYLE_OPTS[k] && STYLE_OPTS[k].some(([q]) => q && q === v)));
+  return { v: 1, ...(Object.keys(style).length ? { style } : {}), ...(ajouts.length ? { ajouts } : {}), ...(neuf.length ? { neuf } : {}), ...(Object.keys(geo).length ? { geo } : {}), ...(Object.keys(iso).length ? { iso } : {}), murs: Array.isArray(st.murs) ? st.murs.filter((k) => walls[k] || neuf.some((sp) => sp.id === k)) : [], ouv: Object.fromEntries(Object.entries(st.ouv || {}).filter(([k]) => ok(k))),
     meubles: Object.fromEntries(Object.entries(st.meubles || {}).filter(([k]) => furn[k])),
     ...(st.fin ? { fin: { murs: Object.fromEntries(Object.entries(st.fin.murs || {}).filter(([k]) => ok(k))), sols: Object.fromEntries(Object.entries(st.fin.sols || {}).filter(([k]) => FLOORS[k])) } } : {}), nom: typeof st.nom === 'string' ? st.nom.slice(0, 40) : '' };
 }
@@ -3993,12 +4200,168 @@ async function initProjects() {
   await importCode(code, 'Lien partagé');
 }
 
+
+// ---------------------------------------------------------------- recapitulatif des travaux : metre + prix unitaires saisis par l'utilisateur
+const PRSTORE = 'maison-prix';
+const m2 = (v) => `${v.toFixed(1).replace('.', ',')} m²`;
+const ml = (v) => `${v.toFixed(1).replace('.', ',')} m`;
+const eur = (v) => `${Math.round(v).toLocaleString('fr-FR')} €`;
+function wallH(d) { return (d.kind === 'ext' ? d.z1 - 0.21 : d.z1) - (d.floor ?? d.z0); }
+function travauxLines() {
+  const S = [];               // sections : { titre, lignes: [{ k, label, detail, q, u, warn }] }
+  const sec = (titre) => { const o = { titre, lignes: [] }; S.push(o); return o; };
+  const add = (o, k, label, q, u, detail = '', warn = '') => { if (q > 1e-6) o.lignes.push({ k, label, q, u, detail, warn }); };
+  // --- demolition
+  const dem = sec('Démolition');
+  const ab = Object.values(walls).filter((w) => w.removed && PW[w.key] && !PW[w.key].def.neuf);
+  add(dem, 'dem_cloison', 'Cloisons abattues', ab.reduce((a, w) => a + w.len * wallH(PW[w.key].def), 0), 'm²', ab.map((w) => w.name).join(', '));
+  let rI = 0, rE = 0, nE = 0;
+  for (const w of Object.values(PW)) for (const o of w.ops) if (ROUGH(o.type)) { const a = o.w * (o.zt - o.zb); if (w.def.kind === 'ext') { rE += a; nE++; } else rI += a; }
+  add(dem, 'dem_partielle', 'Cloisons cassées en partie (portions, trous)', rI, 'm²');
+  add(dem, 'dem_porteur', 'Murs extérieurs ouverts (portions, trous)', rE, 'm²', `${nE} ouverture${nE > 1 ? 's' : ''}`, 'Mur porteur : étude et linteau à prévoir.');
+  // --- ouvertures en facade et toiture
+  const ouv = sec('Ouvertures et menuiseries');
+  const keyO = (o) => `${o.type}|${o.u.toFixed(2)}|${o.w.toFixed(2)}|${o.zb.toFixed(2)}|${o.zt.toFixed(2)}`;
+  const cnt = { cree: 0, modif: 0, ferme: 0, velux: 0, portes: 0, verr: 0, verrA: 0 };
+  for (const w of Object.values(PW)) {
+    const d = w.def, orig = new Set((w.orig || []).map(keyO)), now = new Set(w.ops.map(keyO));
+    if (d.kind === 'roof') { cnt.velux += w.ops.filter((o) => !orig.has(keyO(o))).length; continue; }
+    if (d.kind === 'ext') {
+      const nNew = w.ops.filter((o) => !ROUGH(o.type) && !orig.has(keyO(o))).length, nGone = (w.orig || []).filter((o) => !now.has(keyO(o))).length;
+      const changedN = Math.min(nNew, nGone); cnt.modif += changedN; cnt.cree += nNew - changedN; cnt.ferme += Math.max(0, nGone - nNew);
+    } else {
+      cnt.portes += w.ops.filter((o) => o.type === 'porte_int' && !orig.has(keyO(o))).length;
+      for (const o of w.ops) if (o.type === 'verriere' && !orig.has(keyO(o))) { cnt.verr++; cnt.verrA += o.w * (o.zt - o.zb); }
+    }
+  }
+  add(ouv, 'ouv_cree', 'Fenêtres ou portes créées en façade', cnt.cree, 'u', '', cnt.cree ? 'Déclaration préalable en mairie probable.' : '');
+  add(ouv, 'ouv_modif', 'Fenêtres ou portes modifiées (taille, type, place)', cnt.modif, 'u');
+  add(ouv, 'ouv_ferme', 'Ouvertures rebouchées', cnt.ferme, 'u');
+  add(ouv, 'velux', 'Fenêtres de toit', cnt.velux, 'u');
+  add(ouv, 'porte_int', 'Portes intérieures à poser', cnt.portes, 'u');
+  const sty = styleState();
+  if (Object.keys(sty).length) {
+    const nOuv = Object.values(PW).filter((w) => w.def.kind === 'ext').reduce((a, w) => a + w.ops.filter((o) => !ROUGH(o.type) && o.type !== 'baie').length, 0);
+    add(ouv, 'peint_menuis', 'Menuiseries extérieures à repeindre ou remplacer (couleur)', nOuv, 'u');
+  }
+  // --- cloisons et verrieres
+  const clo = sec('Cloisons');
+  const neuves = Object.values(PW).filter((w) => w.def.neuf && !(walls[w.def.id] && walls[w.def.id].removed));
+  add(clo, 'cloison_neuve', 'Cloisons neuves', neuves.reduce((a, w) => a + (w.def.a1 - w.def.a0) * (w.def.z1 - w.def.z0), 0), 'm²', `${neuves.length} cloison${neuves.length > 1 ? 's' : ''}`);
+  let vA = cnt.verrA;
+  for (const w of Object.values(PW)) if (w.def.verr && w.def.zFull - w.def.z1 > 0.15 && !(walls[w.def.id] && walls[w.def.id].removed)) vA += (w.def.a1 - w.def.a0) * (w.def.zFull - w.def.z1);
+  add(clo, 'verriere', 'Verrières d’atelier', vA, 'm²');
+  const retouch = Object.keys(geoState());
+  add(clo, 'cloison_depl', 'Cloisons existantes déplacées ou modifiées', retouch.length, 'u', retouch.map((id) => walls[id]?.name || id).join(', '));
+  // --- isolation
+  const iso = sec('Isolation');
+  const byEp = {};
+  for (const w of Object.values(PW)) {
+    if (!w.iso) continue;
+    const d = w.def;
+    for (const side of ['A', 'B']) for (const l of w.iso[side] || []) {
+      const outer = (side === 'A' ? d.faceA : d.faceB).outer, k = `${outer ? 'ext' : 'int'}_${Math.round(l.ep * 100)}`;
+      byEp[k] = (byEp[k] || 0) + (l.u1 - l.u0) * (outer ? d.z1 - d.z0 : wallH(d));
+    }
+  }
+  for (const [k, a] of Object.entries(byEp).sort()) {
+    const [kind, ep] = k.split('_');
+    add(iso, `iso_${k}`, kind === 'ext' ? `Isolation par l’extérieur ${ep} cm` : `Doublage intérieur isolant ${ep} cm`, a, 'm²');
+  }
+  const hl = houseLoss();
+  if (hl > 0.01) iso.note = `Surface habitable perdue par les doublages : ${m2(hl)}.`;
+  // --- finitions
+  const fin = sec('Finitions');
+  const byMat = {};
+  for (const w of Object.values(PW)) {
+    if (!w.fin) continue;
+    for (const side of ['A', 'B']) for (const o of w.fin[side] || []) {
+      const outer = (side === 'A' ? w.def.faceA : w.def.faceB).outer;
+      const k = `${outer ? 'facade' : 'mur'}|${o.mat}`;
+      byMat[k] = (byMat[k] || 0) + (o.u1 - o.u0) * (outer ? w.def.z1 - w.def.z0 : wallH(w.def));
+    }
+  }
+  for (const [k, a] of Object.entries(byMat)) {
+    const [where, m] = k.split('|');
+    const lab = finLabel(m), paint = m[0] === '#';
+    add(fin, `fin_${k}`, `${where === 'facade' ? 'Façade' : 'Murs'} : ${paint ? 'peinture ' + lab.toLowerCase() : lab.toLowerCase()}`, a, 'm²');
+  }
+  const bySol = {};
+  for (const [k, f] of Object.entries(FLOORS)) {
+    if (!f.cur) continue;
+    const bb = new THREE.Box3().setFromObject(f.mesh);
+    bySol[f.cur] = (bySol[f.cur] || 0) + (bb.max.x - bb.min.x) * (bb.max.z - bb.min.z);
+  }
+  for (const f of Object.values(furn)) if (f.ajout && !f.removed && f.it.c === 'zone_sol') {
+    const lab = FINS[f.it.fin][1].replace('tex:', '');
+    bySol[lab] = (bySol[lab] || 0) + f.it.w * f.it.d;
+  }
+  for (const [m, a] of Object.entries(bySol)) add(fin, `sol_${m}`, `Sol : ${finLabel(m).toLowerCase()}`, a, 'm²');
+  // --- equipements ajoutes
+  const eq = sec('Équipements et mobilier ajoutés');
+  const byItem = {};
+  for (const f of Object.values(furn)) if (f.ajout && !f.removed && f.it.c !== 'zone_sol') {
+    const c = CAT_OF[f.it.c], k = `${f.it.c}|${Math.round(f.it.w * 100)}`;
+    byItem[k] = byItem[k] || { label: c.label, w: f.it.w, n: 0, c };
+    byItem[k].n++;
+  }
+  for (const [k, v] of Object.entries(byItem)) add(eq, `aj_${k}`, v.label, v.n, 'u', `${cm(v.w)} cm de large`);
+  const exist = Object.values(furn).filter((f) => !f.ajout && changed(f));
+  add(eq, 'meuble_depl', 'Meubles existants déplacés ou retirés', exist.length, 'u');
+  return S.filter((x) => x.lignes.length || x.note);
+}
+function renderRecap() {
+  const prices = lsGet(PRSTORE, {});
+  const body = document.getElementById('recap-body');
+  const S = travauxLines();
+  const cur = curName();
+  document.getElementById('recap-sub').textContent = `${cur ? `Projet « ${cur} »` : 'Projet en cours'} · ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  body.innerHTML = '';
+  if (!S.length) { body.innerHTML = '<p class="empty">Aucun travaux pour l’instant : la maquette est dans l’état d’origine.</p>'; return; }
+  let total = 0, priced = 0;
+  for (const sct of S) {
+    const h = document.createElement('h3'); h.textContent = sct.titre; body.append(h);
+    if (sct.note) { const p = document.createElement('p'); p.className = 'detail'; p.textContent = sct.note; body.append(p); }
+    if (!sct.lignes.length) continue;
+    const t = document.createElement('table');
+    t.innerHTML = '<thead><tr><th>Poste</th><th class="q">Quantité</th><th class="p">Prix unitaire</th><th class="t">Montant</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    for (const l of sct.lignes) {
+      const tr = document.createElement('tr');
+      const qs = l.u === 'm²' ? m2(l.q) : l.u === 'm' ? ml(l.q) : `${Math.round(l.q)}`;
+      const pu = prices[l.k];
+      const amount = Number.isFinite(pu) ? pu * (l.u === 'u' ? Math.round(l.q) : l.q) : null;
+      if (amount !== null) { total += amount; priced++; }
+      tr.innerHTML = `<td><span class="lab"></span>${l.detail ? '<br><span class="detail"></span>' : ''}${l.warn ? '<br><span class="warn"></span>' : ''}</td><td class="q">${qs}</td>
+        <td class="p"><input type="number" min="0" step="1" inputmode="decimal" aria-label="Prix unitaire"> € /${l.u === 'u' ? 'u' : l.u}</td><td class="t">${amount !== null ? eur(amount) : '—'}</td>`;
+      tr.querySelector('.lab').textContent = l.label;
+      if (l.detail) tr.querySelector('.detail').textContent = l.detail;
+      if (l.warn) tr.querySelector('.warn').textContent = l.warn;
+      const inp = tr.querySelector('input');
+      if (Number.isFinite(pu)) inp.value = pu;
+      inp.addEventListener('change', () => {
+        const P = lsGet(PRSTORE, {}), v = parseFloat(inp.value);
+        if (Number.isFinite(v) && v >= 0) P[l.k] = v; else delete P[l.k];
+        lsSet(PRSTORE, P); renderRecap();
+      });
+      tb.append(tr);
+    }
+    t.append(tb); body.append(t);
+  }
+  const tt = document.createElement('table');
+  tt.innerHTML = `<tbody><tr class="total"><td>Total des postes chiffrés</td><td class="t">${priced ? eur(total) : '—'}</td></tr></tbody>`;
+  body.append(tt);
+}
+document.getElementById('pj-recap').addEventListener('click', () => { renderRecap(); document.getElementById('recap').hidden = false; });
+document.getElementById('recap-close').addEventListener('click', () => { document.getElementById('recap').hidden = true; });
+document.getElementById('recap-print').addEventListener('click', () => window.print());
+
 // ---------------------------------------------------------------- aide
 function setHelp() {
   const h = document.getElementById('help');
   if (ouvMode) { h.innerHTML = 'Cliquez une fenêtre ou une porte pour régler ses cotes, ou faites-la glisser le long du mur. Cliquez un mur plein ou un pan de toit pour y ajouter une ouverture. <b>Afficher RDC</b> ou <b>1er</b> donne accès aux cloisons.'; return; }
   if (finMode) { h.innerHTML = 'Cliquez un mur ou un sol, puis choisissez une peinture ou un matériau. <b>Toute la pièce</b> repeint tous les murs de la pièce d’un coup.'; return; }
-  if (furnMode) { h.innerHTML = 'Cliquez un meuble ou un équipement : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Vue du dessus</b> aide à les placer. Portes et fenêtres se règlent avec <b>Ouvertures</b>.'; return; }
+  if (furnMode) { h.innerHTML = 'Cliquez un meuble, un équipement ou l’escalier : glissez-le pour le déplacer, tournez-le ou supprimez-le. <b>Ajouter un élément</b> ouvre le catalogue ; les éléments muraux se collent au mur quand on les en approche. <b>Vue du dessus</b> aide à les placer.'; return; }
   if (wallMode && wmMode === 'tout') { h.innerHTML = 'Cliquez une cloison : glissez-la pour la déplacer (vue Maquette), tirez ses poignées orange pour l’allonger, ou réglez ses cotes. <b>Portion</b> ou <b>Trou</b> pour ne casser qu’une partie, <b>Construire</b> pour en ajouter, <b>Isoler</b> pour doubler les murs.'; return; }
   if (wallMode && wmMode === 'construire') { h.innerHTML = 'Cliquez-glissez au sol pour tracer une cloison. Ensuite : portes avec <b>Ouvertures</b>, peinture avec <b>Revêtements</b>. Pour la retoucher ou la supprimer : <b>Modifier</b>, puis cliquez-la.'; return; }
   if (wallMode && wmMode === 'isoler') { h.innerHTML = 'Cliquez la face d’un mur côté pièce pour un doublage intérieur, ou côté dehors pour une isolation par l’extérieur, puis choisissez l’épaisseur. La surface perdue est calculée pièce par pièce.'; return; }
@@ -4073,7 +4436,7 @@ addEventListener('keydown', (e) => {
   if (!gal.hidden && e.key === 'Escape') { gal.hidden = true; canvas.focus(); }
 }, true);
 
-window.__maison = { PW, orbit, cat: { CATALOG, add: (c) => addFromCatalog(c), state: () => ajoutsState() }, iso: { roomLoss, houseLoss, isoState, pick: (x, y) => pickIso(x, y), sel: () => isoSel }, ROOMS, geo: { editGeom, attachments, sidesOf, geoState, handles }, NEUF, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
+window.__maison = { PW, castFirst, getCollider: () => collider, recap: () => travauxLines(), orbit, cat: { CATALOG, add: (c) => addFromCatalog(c), state: () => ajoutsState() }, iso: { roomLoss, houseLoss, isoState, pick: (x, y) => pickIso(x, y), sel: () => isoSel }, ROOMS, geo: { editGeom, attachments, sidesOf, geoState, handles }, NEUF, fin: { FLOORS, pick: (x, y) => pickFin(x, y), sel: () => finSel, state: finState }, proj: { getState, applyState, pack, unpack, enterBefore, exitBefore }, casse: { mode: (m) => document.querySelector(`[data-wm="${m}"]`).click(), sel: () => wpSel && { id: wpSel.w.def.id, i: wpSel.w.ops.indexOf(wpSel.o) }, hist: () => casseHist.length, pickRough }, ouvSelect(id, i, u, z) { if (!ouvMode) toggleOuvMode(true); selW = PW[id]; selI = i; selSpot = { u, z }; renderOuvPanel(); }, wallHit, setMode, teleport, keys, walker, applyCut, camera, walls, selectWall: (k) => select(walls[k]), furn, selectFurn: (k) => selectFurn(furn[k]),
   probe(bx, by, bz, nobvh) {
     if (nobvh) THREE.Mesh.prototype.raycast = origRaycast;
     const rc = new THREE.Raycaster(b2t(bx, by, bz), DOWN, 0, 10); rc.firstHitOnly = false;
